@@ -1,0 +1,17 @@
+{
+  "name": "granary",
+  "version": "0.0.1",
+  "description": "An aspirational implementation of the Nova programming in TypeScript",
+  "main": "README.md",
+  "scripts": {
+    "_": "See README.md tasks"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "devDependencies": {
+    "@types/node": "^25.0.9",
+    "typescript": "^5.9.3"
+  }
+}
