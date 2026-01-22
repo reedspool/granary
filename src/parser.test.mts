@@ -14,6 +14,18 @@ test("whitespace-only program", () => {
   assert.deepEqual(parse(" \t\n"), { rules: [] });
 });
 
+// shrug, coverage
+test("two empty rules and then a normal rule", () => {
+  assert.deepEqual(parse("|||||:so: simple| :isn't: it"), {
+    rules: [
+      {
+        causes: [{ stack: "so", symbols: "simple" }],
+        effects: [{ stack: "isn't", symbols: "it" }],
+      },
+    ],
+  });
+});
+
 test("single stack nullary cause with no effect", () => {
   assert.deepEqual(parse("|:simple:|"), {
     rules: [{ causes: [{ stack: "simple", symbols: "" }], effects: [] }],
