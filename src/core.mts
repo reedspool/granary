@@ -1,6 +1,6 @@
-import { type AST, type Rule, type Pattern } from "./parser.mts";
+import { type AST, type Rule, type Pattern, type Symbol } from "./parser.mts";
 
-export type Tuple = Array<string>;
+export type Tuple = Array<Symbol>;
 export type Stack = Array<Tuple>;
 
 export type Context = {
@@ -22,7 +22,7 @@ export const fulfillEffect: (ctx: Context, effect: Pattern) => void = (
   { stack, symbols },
 ) => {
   if (!stacks[stack]) stacks[stack] = [];
-  stacks[stack].push([symbols]);
+  stacks[stack].push(symbols);
 };
 
 // TODO: "Maybe" because will implement `?` keeping in the future
@@ -38,9 +38,21 @@ export const matchesCause: (ctx: Context, cause: Pattern) => boolean = (
   { stacks },
   { stack, symbols },
 ) => {
-  const top = stacks[stack]?.at(-1)?.at(0);
+  const top = stacks[stack]?.at(-1);
   if (top === undefined) return false;
-  return top === symbols;
+  if (top.length !== symbols.length) return false;
+  for (let index = 0; index < top.length; index++) {
+    const symbolOnStack = top.at(index);
+    const givenSymbol = symbols.at(index);
+    if (!symbolOnStack) throw new Error("Unexpected undefined symbol on stack");
+    if (!givenSymbol) throw new Error("Unexpected undefined given symbol");
+    if (symbolOnStack.type === "variable")
+      throw new Error("Unexpected variable on stack");
+    if (givenSymbol.type === "variable")
+      throw new Error("Variables not yet implemented");
+    if (symbolOnStack.value !== givenSymbol.value) return false;
+  }
+  return true;
 };
 
 export const execute: (ctx: Context) => void = (ctx) => {
@@ -62,7 +74,7 @@ export const execute: (ctx: Context) => void = (ctx) => {
       rules: for (const rule of ctx.ast.rules) {
         // No causes only matches during initialization
         if (rule.causes.length === 0) continue rules;
-        causes: for (const cause of rule.causes) {
+        for (const cause of rule.causes) {
           if (!matchesCause(ctx, cause)) continue rules;
         }
         matchingRule = rule;
@@ -83,5 +95,5 @@ export const execute: (ctx: Context) => void = (ctx) => {
       // Go again
     }
   }
-  throw new Error("Endless loop tripwire hit");
+  throw new Error("Infinite loop tripwire hit");
 };

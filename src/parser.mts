@@ -1,6 +1,22 @@
+export type Symbol =
+  | { type: "simple"; value: string }
+  | {
+      type: "variable";
+      value: string;
+    };
+
+export const sym: (value?: string, type?: Symbol["type"]) => Symbol = (
+  value = "",
+  type = "simple",
+) => ({
+  value,
+  type,
+});
+
 export type Pattern = {
   stack: string;
-  symbols: string;
+  symbols: Array<Symbol>;
+  keep?: boolean;
 };
 export type Rule = {
   causes: Array<Pattern>;
@@ -17,7 +33,8 @@ export const parse: (source: string) => AST = (source) => {
     | "find_outer_delimiter"
     | "find_inner_delimiter"
     | "reading_stack_name"
-    | "reading_symbols" = "find_outer_delimiter";
+    | "find_symbol"
+    | "read_symbol" = "find_outer_delimiter";
   let subState: "reading_cause" | "reading_effect" = "reading_cause";
   let outer_delimiter: string | null = null;
   let inner_delimiter: string | null = null;
@@ -28,25 +45,47 @@ export const parse: (source: string) => AST = (source) => {
   };
   let currentPattern: Pattern & { modified: boolean } = {
     stack: "",
-    symbols: "",
+    symbols: [],
     modified: false,
   };
+  let currentSymbol: Symbol & {
+    includeSpaces?: boolean;
+    store?: boolean;
+  } = sym();
 
+  const finishCurrentSymbol = () => {
+    if (!currentSymbol.store) return;
+    currentPattern.symbols.push({
+      value: currentSymbol.value,
+      type: currentSymbol.type,
+    });
+    currentPattern.modified = true;
+    currentSymbol = sym();
+  };
   const finishCurrentPattern = () => {
     if (!currentPattern.modified) return;
 
     const target =
       subState === "reading_cause" ? currentRule.causes : currentRule.effects;
 
-    target.push({
+    const pattern: Pattern = {
       stack: currentPattern.stack.trim(),
-      symbols: currentPattern.symbols.trim(),
-    });
+      symbols: currentPattern.symbols,
+    };
+    if (subState === "reading_cause") {
+      const last = pattern.symbols.at(-1);
+      if (last?.value.at(-1) === "?") {
+        last.value = last.value.slice(0, -1);
+        pattern.keep = true;
+      }
+    }
+
+    target.push(pattern);
     currentRule.modified = true;
 
     currentPattern = {
       stack: "",
-      symbols: "",
+      symbols: [],
       modified: false,
     };
   };
@@ -65,6 +104,7 @@ export const parse: (source: string) => AST = (source) => {
   while (true) {
     const char = source.at(index);
     if (!char) {
+      finishCurrentSymbol();
       finishCurrentPattern();
       finishCurrentRule();
       return ast;
@@ -88,13 +128,15 @@ export const parse: (source: string) => AST = (source) => {
       }
     } else if (state === "reading_stack_name") {
       if (inner_delimiter === char) {
-        state = "reading_symbols";
+        state = "find_symbol";
+        currentSymbol.store = true;
       } else {
         currentPattern.stack += char;
         currentPattern.modified = true;
       }
-    } else if (state === "reading_symbols") {
+    } else if (state === "find_symbol" || state === "read_symbol") {
       if (outer_delimiter === char) {
+        finishCurrentSymbol();
         finishCurrentPattern();
         if (subState === "reading_cause") {
           subState = "reading_effect";
@@ -104,11 +146,33 @@ export const parse: (source: string) => AST = (source) => {
         }
         state = "find_inner_delimiter";
       } else if (inner_delimiter === char) {
+        finishCurrentSymbol();
         finishCurrentPattern();
         state = "reading_stack_name";
+      } else if (state === "find_symbol") {
+        if (/\s/.test(char)) {
+          // Do nothing
+        } else if ("[" === char) {
+          state = "read_symbol";
+          currentSymbol.includeSpaces = true;
+        } else {
+          state = "read_symbol";
+          currentSymbol.value += char;
+          currentSymbol.store = true;
+        }
+      } else if (state === "read_symbol") {
+        if (/\s/.test(char) && !currentSymbol.includeSpaces) {
+          finishCurrentSymbol();
+          state = "find_symbol";
+        } else if ("]" === char && currentSymbol.includeSpaces) {
+          finishCurrentSymbol();
+          state = "find_symbol";
+        } else {
+          currentSymbol.value += char;
+          currentSymbol.store = true;
+        }
       } else {
-        currentPattern.symbols += char;
-        currentPattern.modified = true;
+        throw new Error("Unexpected state in parser");
       }
     }
     index++;

@@ -1,57 +1,88 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { parse, type AST } from "./parser.mts";
+import { parse, sym, type AST } from "./parser.mts";
 
 test("test framework works", () => {
   assert.strictEqual(1, 1);
 });
 
 test("empty string program", () => {
-  assert.deepEqual(parse(""), { rules: [] });
+  assert.deepEqual<AST>(parse(""), { rules: [] });
 });
 
 test("whitespace-only program", () => {
-  assert.deepEqual(parse(" \t\n"), { rules: [] });
+  assert.deepEqual<AST>(parse(" \t\n"), { rules: [] });
 });
 
 // shrug, coverage
 test("two empty rules and then a normal rule", () => {
-  assert.deepEqual(parse("|||||:so: simple| :isn't: it"), {
+  assert.deepEqual<AST>(parse("|||||:so: simple| :isn't: it"), {
     rules: [
       {
-        causes: [{ stack: "so", symbols: "simple" }],
-        effects: [{ stack: "isn't", symbols: "it" }],
+        causes: [{ stack: "so", symbols: [sym("simple")] }],
+        effects: [{ stack: "isn't", symbols: [sym("it")] }],
       },
     ],
   });
 });
 
 test("single stack nullary cause with no effect", () => {
-  assert.deepEqual(parse("|:simple:|"), {
-    rules: [{ causes: [{ stack: "simple", symbols: "" }], effects: [] }],
+  assert.deepEqual<AST>(parse("|:simple:|"), {
+    rules: [
+      {
+        causes: [{ stack: "simple", symbols: [sym("")] }],
+        effects: [],
+      },
+    ],
   });
 });
 
 test("single stack unary cause with no effect", () => {
-  assert.deepEqual(parse("|:so: simple|"), {
-    rules: [{ causes: [{ stack: "so", symbols: "simple" }], effects: [] }],
+  assert.deepEqual<AST>(parse("|:so: simple|"), {
+    rules: [
+      {
+        causes: [{ stack: "so", symbols: [sym("simple")] }],
+        effects: [],
+      },
+    ],
   });
 });
 
 test("no cause with single stack nullary effect", () => {
-  assert.deepEqual(parse("|| :pack:"), {
-    rules: [{ causes: [], effects: [{ stack: "pack", symbols: "" }] }],
+  assert.deepEqual<AST>(parse("|| :pack:"), {
+    rules: [
+      {
+        causes: [],
+        effects: [{ stack: "pack", symbols: [sym("")] }],
+      },
+    ],
   });
 });
 
 test("no cause with single stack unary effect", () => {
-  assert.deepEqual(parse("|| :finger: ring"), {
-    rules: [{ causes: [], effects: [{ stack: "finger", symbols: "ring" }] }],
+  assert.deepEqual<AST>(parse("|| :finger: ring"), {
+    rules: [
+      {
+        causes: [],
+        effects: [{ stack: "finger", symbols: [sym("ring")] }],
+      },
+    ],
+  });
+});
+
+test("empty stack name in causes and effects", () => {
+  assert.deepEqual<AST>(parse("|:: here | :: there"), {
+    rules: [
+      {
+        causes: [{ stack: "", symbols: [sym("here")] }],
+        effects: [{ stack: "", symbols: [sym("there")] }],
+      },
+    ],
   });
 });
 
 test("multiple n-ary causes and effects", () => {
-  assert.deepEqual(
+  assert.deepEqual<AST>(
     parse(
       "|:left hand: big sword :right hand: small shield| :attack: pretty good :defense: not great",
     ),
@@ -59,12 +90,24 @@ test("multiple n-ary causes and effects", () => {
       rules: [
         {
           causes: [
-            { stack: "left hand", symbols: "big sword" },
-            { stack: "right hand", symbols: "small shield" },
+            {
+              stack: "left hand",
+              symbols: [sym("big"), sym("sword")],
+            },
+            {
+              stack: "right hand",
+              symbols: [sym("small"), sym("shield")],
+            },
           ],
           effects: [
-            { stack: "attack", symbols: "pretty good" },
-            { stack: "defense", symbols: "not great" },
+            {
+              stack: "attack",
+              symbols: [sym("pretty"), sym("good")],
+            },
+            {
+              stack: "defense",
+              symbols: [sym("not"), sym("great")],
+            },
           ],
         },
       ],
@@ -77,15 +120,102 @@ test("multiple rules", () => {
   |:weather: is gray | :sit: on couch
   |:sky: is sunny | :lie down: in the park
   `;
-  assert.deepEqual(parse(program), {
+  assert.deepEqual<AST>(parse(program), {
     rules: [
       {
-        causes: [{ stack: "weather", symbols: "is gray" }],
-        effects: [{ stack: "sit", symbols: "on couch" }],
+        causes: [
+          {
+            stack: "weather",
+            symbols: [sym("is"), sym("gray")],
+          },
+        ],
+        effects: [
+          {
+            stack: "sit",
+            symbols: [sym("on"), sym("couch")],
+          },
+        ],
       },
       {
-        causes: [{ stack: "sky", symbols: "is sunny" }],
-        effects: [{ stack: "lie down", symbols: "in the park" }],
+        causes: [
+          {
+            stack: "sky",
+            symbols: [sym("is"), sym("sunny")],
+          },
+        ],
+        effects: [
+          {
+            stack: "lie down",
+            symbols: [sym("in"), sym("the"), sym("park")],
+          },
+        ],
+      },
+    ],
+  });
+});
+
+test("keep `?` works in cause but not effect ", () => {
+  const program = `
+  |:cat: meow? :dog: bark | :this: does not flip keep flag?
+  |:snake: hiss?| 
+  `;
+  assert.deepEqual<AST>(parse(program), {
+    rules: [
+      {
+        causes: [
+          {
+            stack: "cat",
+            symbols: [sym("meow")],
+            keep: true,
+          },
+          { stack: "dog", symbols: [sym("bark")] },
+        ],
+        effects: [
+          {
+            stack: "this",
+            symbols: [
+              sym("does"),
+              sym("not"),
+              sym("flip"),
+              sym("keep"),
+              sym("flag?"),
+            ],
+          },
+        ],
+      },
+      {
+        causes: [
+          {
+            stack: "snake",
+            symbols: [sym("hiss")],
+            keep: true,
+          },
+        ],
+        effects: [],
+      },
+    ],
+  });
+});
+
+test("symbols with spaces in them", () => {
+  const program = `
+  |:an easy one: [look i can] and not |:an easy one: [look i can] and not 
+  `;
+  assert.deepEqual<AST>(parse(program), {
+    rules: [
+      {
+        causes: [
+          {
+            stack: "an easy one",
+            symbols: [sym("look i can"), sym("and"), sym("not")],
+          },
+        ],
+        effects: [
+          {
+            stack: "an easy one",
+            symbols: [sym("look i can"), sym("and"), sym("not")],
+          },
+        ],
       },
     ],
   });
@@ -98,19 +228,19 @@ test("kitchen sink", () => {
   |:I: will keep this thank you? :and this too: please?|
   :More#$!@#$%^&() crazy characters:
 `;
-  assert.deepEqual(parse(program), {
+  assert.deepEqual<AST>(parse(program), {
     rules: [
       {
         causes: [
           {
             stack: "f",
-            symbols: "abcd",
+            symbols: [sym("abcd")],
           },
         ],
         effects: [
           {
             stack: "qualm",
-            symbols: "rabbit architect",
+            symbols: [sym("rabbit"), sym("architect")],
           },
         ],
       },
@@ -119,7 +249,7 @@ test("kitchen sink", () => {
         effects: [
           {
             stack: "colors",
-            symbols: "can be blue",
+            symbols: [sym("can"), sym("be"), sym("blue")],
           },
         ],
       },
@@ -127,14 +257,27 @@ test("kitchen sink", () => {
         causes: [
           {
             stack: "I",
-            symbols: "will keep this thank you?",
+            symbols: [
+              sym("will"),
+              sym("keep"),
+              sym("this"),
+              sym("thank"),
+              sym("you"),
+            ],
+            keep: true,
           },
           {
             stack: "and this too",
-            symbols: "please?",
+            symbols: [sym("please")],
+            keep: true,
           },
         ],
-        effects: [{ stack: "More#$!@#$%^&() crazy characters", symbols: "" }],
+        effects: [
+          {
+            stack: "More#$!@#$%^&() crazy characters",
+            symbols: [sym("")],
+          },
+        ],
       },
     ],
   });
