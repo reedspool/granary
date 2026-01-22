@@ -25,6 +25,15 @@ export const fulfillEffect: (ctx: Context, effect: Pattern) => void = (
   stacks[stack].push([symbols]);
 };
 
+// TODO: "Maybe" because will implement `?` keeping in the future
+export const maybePopMatchingCause: (ctx: Context, cause: Pattern) => void = (
+  { stacks },
+  { stack },
+) => {
+  if (!stacks[stack]) throw new Error(`Unexpected missing stack '${stack}'`);
+  stacks[stack].pop();
+};
+
 export const matchesCause: (ctx: Context, cause: Pattern) => boolean = (
   { stacks },
   { stack, symbols },
@@ -47,11 +56,12 @@ export const execute: (ctx: Context) => void = (ctx) => {
         }
       }
       ctx.initialized = true;
-      return;
     } else {
       // Main loop. Search for a matching cause
       let matchingRule: Rule | null = null;
       rules: for (const rule of ctx.ast.rules) {
+        // No causes only matches during initialization
+        if (rule.causes.length === 0) continue rules;
         causes: for (const cause of rule.causes) {
           if (!matchesCause(ctx, cause)) continue rules;
         }
@@ -61,6 +71,10 @@ export const execute: (ctx: Context) => void = (ctx) => {
 
       // No matching rule, settled
       if (matchingRule === null) return;
+
+      for (const cause of matchingRule.causes) {
+        maybePopMatchingCause(ctx, cause);
+      }
 
       for (const effect of matchingRule.effects) {
         fulfillEffect(ctx, effect);
