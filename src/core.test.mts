@@ -157,3 +157,19 @@ test("causes which keep their stacks", () => {
   stacks["dairy"] = [];
   assert.deepEqual<Context["stacks"]>(ctx.stacks, stacks);
 });
+
+test("matching multi-word symbols with variables", () => {
+  const program = `
+  | :prepare: [birthday party!] | :decorations: streamers
+  | :party: $whose $kind | :prepare: $kind :calendar: $whose $kind
+  || :party: my [birthday party!] 
+  `;
+  const ctx = context(parse(program));
+  execute(ctx);
+  const stacks: Context["stacks"] = {};
+  stacks["party"] = [];
+  stacks["prepare"] = [];
+  stacks["calendar"] = [[sym("my"), sym("birthday party!")]];
+  stacks["decorations"] = [[sym("streamers")]];
+  assert.deepEqual<Context["stacks"]>(ctx.stacks, stacks);
+});
