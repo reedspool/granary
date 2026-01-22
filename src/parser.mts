@@ -55,10 +55,12 @@ export const parse: (source: string) => AST = (source) => {
 
   const finishCurrentSymbol = () => {
     if (!currentSymbol.store) return;
-    currentPattern.symbols.push({
-      value: currentSymbol.value,
-      type: currentSymbol.type,
-    });
+    const symbol = sym(currentSymbol.value);
+    if (currentSymbol.value.startsWith("$")) {
+      symbol.value = symbol.value.slice(1);
+      symbol.type = "variable";
+    }
+    currentPattern.symbols.push(symbol);
     currentPattern.modified = true;
     currentSymbol = sym();
   };

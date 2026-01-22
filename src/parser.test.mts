@@ -197,6 +197,44 @@ test("keep `?` works in cause but not effect ", () => {
   });
 });
 
+test("symbols can be variables in any position", () => {
+  const program = `
+  |:: abcd $efgh :ijkl: lm $no pq | :rst: uv $wx :yz: now $I know $my abcs
+`;
+  assert.deepEqual<AST>(parse(program), {
+    rules: [
+      {
+        causes: [
+          {
+            stack: "",
+            symbols: [sym("abcd"), sym("efgh", "variable")],
+          },
+          {
+            stack: "ijkl",
+            symbols: [sym("lm"), sym("no", "variable"), sym("pq")],
+          },
+        ],
+        effects: [
+          {
+            stack: "rst",
+            symbols: [sym("uv"), sym("wx", "variable")],
+          },
+          {
+            stack: "yz",
+            symbols: [
+              sym("now"),
+              sym("I", "variable"),
+              sym("know"),
+              sym("my", "variable"),
+              sym("abcs"),
+            ],
+          },
+        ],
+      },
+    ],
+  });
+});
+
 test("symbols with spaces in them", () => {
   const program = `
   |:an easy one: [look i can] and not |:an easy one: [look i can] and not 
