@@ -115,6 +115,7 @@ export const parse: (source: string) => AST = (source) => {
       if (/\S/.test(char)) {
         outer_delimiter = char;
         state = "find_inner_delimiter";
+        currentRule.modified = true;
       }
     } else if (state === "find_inner_delimiter") {
       if (outer_delimiter === char) {
@@ -123,6 +124,8 @@ export const parse: (source: string) => AST = (source) => {
           subState = "reading_effect";
         } else if (subState === "reading_effect") {
           subState = "reading_cause";
+          finishCurrentRule();
+          currentRule.modified = true;
         }
       } else if (/\S/.test(char)) {
         inner_delimiter = char;
@@ -144,6 +147,7 @@ export const parse: (source: string) => AST = (source) => {
           subState = "reading_effect";
         } else if (subState === "reading_effect") {
           finishCurrentRule();
+          currentRule.modified = true;
           subState = "reading_cause";
         }
         state = "find_inner_delimiter";

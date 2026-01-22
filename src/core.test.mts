@@ -143,3 +143,17 @@ test("single symbol variable matches across cause and effect", () => {
   stacks["how tall"] = [[sym("very"), sym("tall")]];
   assert.deepEqual<Context["stacks"]>(ctx.stacks, stacks);
 });
+
+test("causes which keep their stacks", () => {
+  const program = `
+  | :produce: some brocolli? :dairy: swiss cheese | :dairy: brie
+  | :dairy: brie :produce: some brocolli? |
+  || :produce: some brocolli :dairy: swiss cheese
+  `;
+  const ctx = context(parse(program));
+  execute(ctx);
+  const stacks: Context["stacks"] = {};
+  stacks["produce"] = [[sym("some"), sym("brocolli")]];
+  stacks["dairy"] = [];
+  assert.deepEqual<Context["stacks"]>(ctx.stacks, stacks);
+});

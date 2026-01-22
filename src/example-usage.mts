@@ -1,14 +1,10 @@
 import { parse, context, execute } from "./index.mts";
 
 const program = `
-
-  | :dolphin: $food :porpoise: $food | :answer: nope
-  | :narwhal: $food :porpoise: $food | :answer: gotchya
-  || :porpoise: cranberry
-  || :narwhal: cranberry
-  || :dolphin: butter
-  
-`;
+  | :produce: some brocolli? :dairy: swiss cheese | :dairy: brie
+  | :dairy: brie :produce: some brocolli? |
+  || :produce: some brocolli :dairy: swiss cheese
+  `;
 
 const ast = parse(program);
 const ctx = context(ast);

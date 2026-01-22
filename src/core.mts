@@ -37,12 +37,12 @@ export const fulfillEffect: (ctx: Context, effect: Pattern) => void = (
   );
 };
 
-// TODO: "Maybe" because will implement `?` keeping in the future
 export const maybePopMatchingCause: (ctx: Context, cause: Pattern) => void = (
   { stacks },
-  { stack },
+  { stack, keep },
 ) => {
   if (!stacks[stack]) throw new Error(`Unexpected missing stack '${stack}'`);
+  if (keep) return;
   stacks[stack].pop();
 };
 

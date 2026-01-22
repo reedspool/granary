@@ -18,6 +18,8 @@ test("whitespace-only program", () => {
 test("two empty rules and then a normal rule", () => {
   assert.deepEqual<AST>(parse("|||||:so: simple| :isn't: it"), {
     rules: [
+      { causes: [], effects: [] },
+      { causes: [], effects: [] },
       {
         causes: [{ stack: "so", symbols: [sym("simple")] }],
         effects: [{ stack: "isn't", symbols: [sym("it")] }],
@@ -252,6 +254,35 @@ test("symbols with spaces in them", () => {
           {
             stack: "an easy one",
             symbols: [sym("look i can"), sym("and"), sym("not")],
+          },
+        ],
+      },
+    ],
+  });
+});
+
+test("Rule with no effects before another rule", () => {
+  const program = `
+  | :dairy: brie |
+  | | :produce: some 
+`;
+  assert.deepEqual<AST>(parse(program), {
+    rules: [
+      {
+        causes: [
+          {
+            stack: "dairy",
+            symbols: [sym("brie")],
+          },
+        ],
+        effects: [],
+      },
+      {
+        causes: [],
+        effects: [
+          {
+            stack: "produce",
+            symbols: [sym("some")],
           },
         ],
       },
