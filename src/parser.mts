@@ -173,8 +173,6 @@ export const parse: (source: string) => AST = (source) => {
           currentSymbol.value += char;
           currentSymbol.store = true;
         }
-      } else {
-        throw new Error("Unexpected state in parser");
       }
     }
     index++;

@@ -8,6 +8,7 @@ test("empty context", () => {
     ast: parse(""),
     stacks: {},
     initialized: false,
+    variableValuesByName: {},
   });
 });
 
@@ -132,7 +133,7 @@ test("single symbol variable matches across two causes", () => {
 
 test("single symbol variable matches across cause and effect", () => {
   const program = `
-  | :tree: $height | :how tall: $height
+  | :tree: $what $height | :how tall: $what $height
   || :tree: very tall
   `;
   const ctx = context(parse(program));

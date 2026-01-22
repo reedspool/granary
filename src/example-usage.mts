@@ -1,8 +1,13 @@
 import { parse, context, execute } from "./index.mts";
 
 const program = `
-  |:match me:| :place: apple
-  || :match me: 
+
+  | :dolphin: $food :porpoise: $food | :answer: nope
+  | :narwhal: $food :porpoise: $food | :answer: gotchya
+  || :porpoise: cranberry
+  || :narwhal: cranberry
+  || :dolphin: butter
+  
 `;
 
 const ast = parse(program);
@@ -10,8 +15,14 @@ const ctx = context(ast);
 execute(ctx);
 
 console.log("Stacks:");
-for (const [name, values] of Object.entries(ctx.stacks)) {
+for (const [name, tuples] of Object.entries(ctx.stacks)) {
   console.log(
-    `:${name}: ${values.length === 0 ? "<empty>" : values.join(", ")}`,
+    `:${name}: ${
+      tuples.length === 0
+        ? "<empty>"
+        : tuples
+            .map((tuple) => tuple.map(({ value }) => value).join(" "))
+            .join(", ")
+    }`,
   );
 }

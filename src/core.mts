@@ -1,4 +1,10 @@
-import { type AST, type Rule, type Pattern, type Symbol } from "./parser.mts";
+import {
+  type AST,
+  type Rule,
+  type Pattern,
+  type Symbol,
+  sym,
+} from "./parser.mts";
 
 export type Tuple = Array<Symbol>;
 export type Stack = Array<Tuple>;
@@ -7,6 +13,7 @@ export type Context = {
   ast: AST;
   stacks: Record<string, Stack>;
   initialized: boolean;
+  variableValuesByName: Record<string, string>;
 };
 
 export const context: (ast: AST) => Context = (ast) => {
@@ -14,15 +21,20 @@ export const context: (ast: AST) => Context = (ast) => {
     ast,
     stacks: {},
     initialized: false,
+    variableValuesByName: {},
   };
 };
 
 export const fulfillEffect: (ctx: Context, effect: Pattern) => void = (
-  { stacks },
+  { stacks, variableValuesByName },
   { stack, symbols },
 ) => {
   if (!stacks[stack]) stacks[stack] = [];
-  stacks[stack].push(symbols);
+  stacks[stack].push(
+    symbols.map((s) =>
+      s.type === "simple" ? s : sym(variableValuesByName[s.value]),
+    ),
+  );
 };
 
 // TODO: "Maybe" because will implement `?` keeping in the future
@@ -35,7 +47,7 @@ export const maybePopMatchingCause: (ctx: Context, cause: Pattern) => void = (
 };
 
 export const matchesCause: (ctx: Context, cause: Pattern) => boolean = (
-  { stacks },
+  { stacks, variableValuesByName },
   { stack, symbols },
 ) => {
   const top = stacks[stack]?.at(-1);
@@ -48,9 +60,16 @@ export const matchesCause: (ctx: Context, cause: Pattern) => boolean = (
     if (!givenSymbol) throw new Error("Unexpected undefined given symbol");
     if (symbolOnStack.type === "variable")
       throw new Error("Unexpected variable on stack");
-    if (givenSymbol.type === "variable")
-      throw new Error("Variables not yet implemented");
-    if (symbolOnStack.value !== givenSymbol.value) return false;
+    if (givenSymbol.type === "variable") {
+      if (!variableValuesByName[givenSymbol.value]) {
+        variableValuesByName[givenSymbol.value] = symbolOnStack.value;
+      } else {
+        if (variableValuesByName[givenSymbol.value] !== symbolOnStack.value)
+          return false;
+      }
+    } else {
+      if (symbolOnStack.value !== givenSymbol.value) return false;
+    }
   }
   return true;
 };
@@ -72,6 +91,7 @@ export const execute: (ctx: Context) => void = (ctx) => {
       // Main loop. Search for a matching cause
       let matchingRule: Rule | null = null;
       rules: for (const rule of ctx.ast.rules) {
+        ctx.variableValuesByName = {}; // Reset for each rule
         // No causes only matches during initialization
         if (rule.causes.length === 0) continue rules;
         for (const cause of rule.causes) {
