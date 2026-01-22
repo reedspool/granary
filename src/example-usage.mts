@@ -1,4 +1,5 @@
 import { parse, context, execute } from "./index.mts";
+import { prettyTuple } from "./pretty.mts";
 
 const program = `
   | :produce: some brocolli? :dairy: swiss cheese | :dairy: brie
@@ -16,9 +17,7 @@ for (const [name, tuples] of Object.entries(ctx.stacks)) {
     `:${name}: ${
       tuples.length === 0
         ? "<empty>"
-        : tuples
-            .map((tuple) => tuple.map(({ value }) => value).join(" "))
-            .join(", ")
+        : tuples.map((tuple) => prettyTuple(tuple)).join(", ")
     }`,
   );
 }
