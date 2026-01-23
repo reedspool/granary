@@ -35,7 +35,10 @@ export type AST = {
   rules: Array<Rule>;
 };
 
-export const parse: (source: string) => AST = (source) => {
+export const parse: (
+  source: string,
+  options?: { stopAfterSingleRule?: boolean },
+) => AST = (source, options) => {
   const ast: AST = { rules: [] };
   let index = 0;
   let state:
@@ -140,6 +143,10 @@ export const parse: (source: string) => AST = (source) => {
           subState = "reading_effect";
         } else if (subState === "reading_effect") {
           finishCurrentRule();
+
+          if (options?.stopAfterSingleRule) {
+            return ast;
+          }
           currentRule.modified = true;
           subState = "reading_cause";
         }
@@ -174,4 +181,13 @@ export const parse: (source: string) => AST = (source) => {
     }
     index++;
   }
+};
+
+export const parseRule: (source: string) => Rule = (source) => {
+  const ast = parse(source, { stopAfterSingleRule: true });
+
+  const rule = ast.rules[0];
+  if (!rule) throw new Error(`Failed to parse a rule from '${source}'`);
+
+  return rule;
 };

@@ -1,6 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { parse, sym, type AST } from "./parser.mts";
+import { parse, parseRule, sym, type AST } from "./parser.mts";
 
 test("test framework works", () => {
   assert.strictEqual(1, 1);
@@ -12,6 +12,25 @@ test("empty string program", () => {
 
 test("whitespace-only program", () => {
   assert.deepEqual<AST>(parse(" \t\n"), { rules: [] });
+});
+
+test("parseRule throws on an empty program", () => {
+  assert.throws(() => parseRule(""));
+});
+
+test("parseRule with a single rule returns it", () => {
+  const source = "|:music: rocks| :rock: just lays there";
+  const rule = parseRule(source);
+  assert.deepEqual(rule, parse(source).rules.at(0));
+});
+
+test("parseRule with multiple rules returns the first one", () => {
+  const source = `
+    |:music: rocks| :rock: just lays there
+    |:paintings: make walls interesting|
+  `;
+  const rule = parseRule(source);
+  assert.deepEqual(rule, parse(source).rules.at(0));
 });
 
 // shrug, coverage
