@@ -1,4 +1,4 @@
-import { parse, context, execute } from "./index.mts";
+import { parse, context, settle } from "./index.mts";
 import { prettyTuple } from "./pretty.mts";
 
 const program = `
@@ -9,7 +9,7 @@ const program = `
 
 const ast = parse(program);
 const ctx = context(ast);
-execute(ctx);
+settle(ctx);
 
 console.log("Stacks:");
 for (const [name, tuples] of Object.entries(ctx.stacks)) {

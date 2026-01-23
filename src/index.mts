@@ -1,2 +1,2 @@
 export { parse } from "./parser.mts";
-export { context, execute } from "./core.mts";
+export { context, settle, step } from "./core.mts";

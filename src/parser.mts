@@ -18,10 +18,19 @@ export type Pattern = {
   symbols: Array<Symbol>;
   keep?: boolean;
 };
+
+export const pattern: (
+  stack?: string,
+  symbols?: Pattern["symbols"],
+) => Pattern = (stack = "", symbols = []) => ({ stack, symbols });
+
 export type Rule = {
   causes: Array<Pattern>;
   effects: Array<Pattern>;
 };
+
+export const rule: () => Rule = () => ({ causes: [], effects: [] });
+
 export type AST = {
   rules: Array<Rule>;
 };
@@ -38,16 +47,8 @@ export const parse: (source: string) => AST = (source) => {
   let subState: "reading_cause" | "reading_effect" = "reading_cause";
   let outer_delimiter: string | null = null;
   let inner_delimiter: string | null = null;
-  let currentRule: Rule & { modified: boolean } = {
-    causes: [],
-    effects: [],
-    modified: false,
-  };
-  let currentPattern: Pattern & { modified: boolean } = {
-    stack: "",
-    symbols: [],
-    modified: false,
-  };
+  let currentRule: Rule & { modified?: boolean } = rule();
+  let currentPattern: Pattern & { modified?: boolean } = pattern();
   let currentSymbol: Symbol & {
     includeSpaces?: boolean;
     store?: boolean;
@@ -70,38 +71,30 @@ export const parse: (source: string) => AST = (source) => {
     const target =
       subState === "reading_cause" ? currentRule.causes : currentRule.effects;
 
-    const pattern: Pattern = {
+    const newPattern: Pattern = {
       stack: currentPattern.stack.trim(),
       symbols: currentPattern.symbols,
     };
     if (subState === "reading_cause") {
-      const last = pattern.symbols.at(-1);
+      const last = newPattern.symbols.at(-1);
       if (last?.value.at(-1) === "?") {
         last.value = last.value.slice(0, -1);
-        pattern.keep = true;
+        newPattern.keep = true;
       }
     }
 
-    target.push(pattern);
+    target.push(newPattern);
     currentRule.modified = true;
 
-    currentPattern = {
-      stack: "",
-      symbols: [],
-      modified: false,
-    };
+    currentPattern = pattern();
   };
   const finishCurrentRule = () => {
     if (!currentRule.modified) return;
-    ast.rules.push({
-      causes: currentRule.causes,
-      effects: currentRule.effects,
-    });
-    currentRule = {
-      causes: [],
-      effects: [],
-      modified: false,
-    };
+    const newRule = rule();
+    newRule.causes = currentRule.causes;
+    newRule.effects = currentRule.effects;
+    ast.rules.push(newRule);
+    currentRule = rule();
   };
   while (true) {
     const char = source.at(index);

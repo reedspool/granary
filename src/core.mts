@@ -74,46 +74,58 @@ export const matchesCause: (ctx: Context, cause: Pattern) => boolean = (
   return true;
 };
 
-export const execute: (ctx: Context) => void = (ctx) => {
+export const findMatchingRule: (ctx: Context) => Rule | null = (ctx) => {
+  rules: for (const rule of ctx.ast.rules) {
+    ctx.variableValuesByName = {}; // Reset for each rule
+    // No causes only matches during initialization
+    if (rule.causes.length === 0) continue rules;
+    for (const cause of rule.causes) {
+      if (!matchesCause(ctx, cause)) continue rules;
+    }
+    return rule;
+  }
+
+  return null;
+};
+
+// Returns true if a rule matched, false if not
+export const step: (ctx: Context) => boolean = (ctx) => {
+  // First, distinct pass which matches only all empty causes
+  if (!ctx.initialized) {
+    let matched = false;
+    for (const rule of ctx.ast.rules) {
+      if (rule.causes.length === 0) {
+        for (const effect of rule.effects) {
+          matched = true;
+          fulfillEffect(ctx, effect);
+        }
+      }
+    }
+    ctx.initialized = true;
+    return matched;
+  }
+
+  // Main loop. Search for a matching cause
+  const matchingRule = findMatchingRule(ctx);
+
+  // No matching rule, settled
+  if (matchingRule === null) return false;
+
+  for (const cause of matchingRule.causes) {
+    maybePopMatchingCause(ctx, cause);
+  }
+
+  for (const effect of matchingRule.effects) {
+    fulfillEffect(ctx, effect);
+  }
+
+  return true;
+};
+
+export const settle: (ctx: Context) => void = (ctx) => {
   let endlessLoopTracker = 0;
   while (endlessLoopTracker++ < 10_000) {
-    // First, distinct pass which matches only all empty causes
-    if (!ctx.initialized) {
-      for (const rule of ctx.ast.rules) {
-        if (rule.causes.length === 0) {
-          for (const effect of rule.effects) {
-            fulfillEffect(ctx, effect);
-          }
-        }
-      }
-      ctx.initialized = true;
-    } else {
-      // Main loop. Search for a matching cause
-      let matchingRule: Rule | null = null;
-      rules: for (const rule of ctx.ast.rules) {
-        ctx.variableValuesByName = {}; // Reset for each rule
-        // No causes only matches during initialization
-        if (rule.causes.length === 0) continue rules;
-        for (const cause of rule.causes) {
-          if (!matchesCause(ctx, cause)) continue rules;
-        }
-        matchingRule = rule;
-        break rules; // be gay do crime
-      }
-
-      // No matching rule, settled
-      if (matchingRule === null) return;
-
-      for (const cause of matchingRule.causes) {
-        maybePopMatchingCause(ctx, cause);
-      }
-
-      for (const effect of matchingRule.effects) {
-        fulfillEffect(ctx, effect);
-      }
-
-      // Go again
-    }
+    if (!step(ctx)) return;
   }
   throw new Error("Infinite loop tripwire hit");
 };
