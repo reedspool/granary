@@ -1,19 +1,57 @@
-import { type Context } from "./core.mts";
-import { prettyTuple } from "./pretty.mts";
+import {
+  context,
+  findMatchingRule,
+  maybePopMatchingCause,
+  step,
+  type Context,
+} from "./core.mts";
+import { parse, parseRule, type Rule } from "./parser.mts";
 
-const HOST_SETTLED_STACK = "@host settled";
-export const evaluateHostSettled: (ctx: Context) => void = (ctx) => {
-  const stack = ctx.stacks[HOST_SETTLED_STACK];
-  if (!stack) return;
-  for (const tuple of stack) {
-    const command = tuple[0]?.value;
-    if (command === "log") {
-      console.log(prettyTuple(tuple.slice(1)));
-    } else {
-      console.warn(
-        `:@host settled: didn't know how to process command '${prettyTuple(tuple)}'`,
-      );
-    }
+// Not sure if you'll ever want the full rule, since theoretically you matched on the causes already.
+export type MatchingRuleCallback = (ctx: Context) => void;
+
+export const createHost = (ctxOrSource: Context | string) =>
+  new Host(
+    typeof ctxOrSource === "string" ? context(parse(ctxOrSource)) : ctxOrSource,
+  );
+
+export class Host extends EventTarget {
+  ctx: Context;
+  hostStepCompletedEventName = "host step completed";
+  hostSettledEventName = "host settled completed";
+
+  constructor(ctx: Context) {
+    super();
+    this.ctx = ctx;
   }
-  stack.length = 0;
-};
+
+  step() {
+    const matchedAnything = step(this.ctx);
+    this.dispatchEvent(new Event(this.hostStepCompletedEventName));
+    if (!matchedAnything)
+      this.dispatchEvent(new Event(this.hostSettledEventName));
+    return matchedAnything;
+  }
+
+  settle() {
+    // This is basically core's settle() except it calls my step instead of
+    // core's step() to dispatch events
+    let endlessLoopTracker = 0;
+    while (endlessLoopTracker++ < 10_000) {
+      if (!this.step()) return;
+    }
+    throw new Error("Infinite loop tripwire hit");
+  }
+
+  onStepped(callback: MatchingRuleCallback) {
+    this.addEventListener(this.hostStepCompletedEventName, () =>
+      callback.call(this, this.ctx),
+    );
+  }
+
+  onSettled(callback: MatchingRuleCallback) {
+    this.addEventListener(this.hostSettledEventName, () =>
+      callback.call(this, this.ctx),
+    );
+  }
+}

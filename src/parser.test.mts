@@ -175,6 +175,31 @@ test("multiple rules", () => {
   });
 });
 
+test("keep `?` with a cause with no symbols", () => {
+  const program = `
+  |:you better not drop me: ?|
+  `;
+  assert.deepEqual<AST>(parse(program), {
+    rules: [
+      {
+        causes: [
+          {
+            stack: "you better not drop me",
+            symbols: [
+              {
+                type: "simple",
+                value: "",
+              },
+            ],
+            keep: true,
+          },
+        ],
+        effects: [],
+      },
+    ],
+  });
+});
+
 test("keep `?` works in cause but not effect ", () => {
   const program = `
   |:cat: meow? :dog: bark | :this: does not flip keep flag?
