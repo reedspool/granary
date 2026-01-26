@@ -1,12 +1,12 @@
 {
+  "exclude": [],
   "compilerOptions": {
-    "rootDir": "./src",
+    "rootDir": ".",
     "noEmit": true,
     "module": "nodenext",
     "target": "esnext",
-    "types": [],
 
-    "lib": ["esnext"],
+    "lib": ["esnext", "dom"],
     "types": ["node"],
 
     "sourceMap": true,

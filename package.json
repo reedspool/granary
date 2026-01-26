@@ -2,16 +2,33 @@
   "name": "granary",
   "version": "0.0.1",
   "description": "An aspirational implementation of the Nova programming in TypeScript",
-  "main": "README.md",
-  "scripts": {
-    "_": "See README.md tasks"
-  },
   "keywords": [],
   "author": "",
   "license": "ISC",
-  "type": "commonjs",
+  "type": "module",
+  "exports": {
+    ".": {
+      "import": {
+        "types": "./build/index.d.mts",
+        "default": "./build/index.mjs"
+      },
+      "require": {
+        "types": "./build/index.d.cts",
+        "default": "./build/index.cjs"
+      }
+    }
+  },
+  "files": [
+    "./build/**/*"
+  ],
+  "scripts": {
+    "_": "See README.md tasks"
+  },
   "devDependencies": {
+    "@arethetypeswrong/core": "^0.18.2",
     "@types/node": "^25.0.9",
+    "publint": "^0.3.17",
+    "tsdown": "^0.20.1",
     "typescript": "^5.9.3"
   }
 }

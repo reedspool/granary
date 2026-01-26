@@ -43,3 +43,20 @@ interactive: true
 ```
 node --inspect-brk src/example-usage.mts
 ```
+
+### build
+
+Configured in `tsdown.config.mts`
+
+```sh
+npx tsdown
+```
+
+### build-watch
+
+Continuous version of the above, useful for playing with the webpage while
+developing the core lib.
+
+```sh
+npx tsdown --watch
+```
