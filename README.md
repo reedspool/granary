@@ -10,6 +10,8 @@ A version of Nova in TypeScript
 
 ```sh
 npm install
+cd web
+npm install
 ```
 
 ### test
@@ -59,4 +61,29 @@ developing the core lib.
 
 ```sh
 npx tsdown --watch
+```
+
+### link-build-to-web
+
+This works, but you MUST run it manually after every build. Would be nice to
+have a version which watched the build directory and did this automatically.
+
+```sh
+cd web
+npm uninstall granary
+npm install ../
+```
+
+### web-dev
+
+```sh
+cd web;
+npm run dev
+```
+
+### web-build
+
+```sh
+cd web;
+npm run build
 ```
