@@ -39,6 +39,22 @@ test("findMatchingRule does what it says on the tin", () => {
   assert.deepEqual<Rule | null>(found, expected);
 });
 
+test("findMatchingRule can match more symbols than the given effect", () => {
+  const program = `
+    |:proof: is in the pudding|
+    ||:proof: is
+    ||:proof: in the :proof: pudding
+  `;
+  const ctx = context(parse(program));
+  step(ctx);
+  const found = findMatchingRule(ctx);
+  const expected: Rule = rule();
+  expected.causes.push(
+    pattern("proof", [sym("is"), sym("in"), sym("the"), sym("pudding")]),
+  );
+  assert.deepEqual<Rule | null>(found, expected);
+});
+
 test("step handles all the initializers at once", () => {
   const program = `
     ||:a:
@@ -49,9 +65,9 @@ test("step handles all the initializers at once", () => {
   const ctx = context(parse(program));
   step(ctx);
   const stacks: Context["stacks"] = {};
-  stacks["a"] = [[sym()]];
-  stacks["b"] = [[sym()]];
-  stacks["c"] = [[sym()]];
+  stacks["a"] = [sym()];
+  stacks["b"] = [sym()];
+  stacks["c"] = [sym()];
   assert.deepEqual<Context["stacks"]>(ctx.stacks, stacks);
   const found = findMatchingRule(ctx);
   const expected: Rule = rule();
@@ -86,11 +102,15 @@ test("settle initial setup on stacks", () => {
   const ctx = context(parse(program));
   settle(ctx);
   const expectedCtx = context(parse(program));
-  expectedCtx.stacks["starter"] = [[sym("up")]];
-  expectedCtx.stacks["empty card"] = [[sym("")]];
+  expectedCtx.stacks["starter"] = [sym("up")];
+  expectedCtx.stacks["empty card"] = [sym("")];
   expectedCtx.stacks["another"] = [
-    [sym("one"), sym("as"), sym("well!")],
-    [sym("because"), sym("why"), sym("not?")],
+    sym("one"),
+    sym("as"),
+    sym("well!"),
+    sym("because"),
+    sym("why"),
+    sym("not?"),
   ];
   expectedCtx.initialized = true;
   assert.deepEqual<Context>(ctx, expectedCtx);
@@ -99,13 +119,13 @@ test("settle initial setup on stacks", () => {
 test("settle simplest nullary cause", () => {
   const program = `
   |:match me:| :place: apple
-  || :match me: 
+  || :match me:
   `;
   const ctx = context(parse(program));
   settle(ctx);
   const stacks: Context["stacks"] = {};
   stacks["match me"] = [];
-  stacks["place"] = [[sym("apple")]];
+  stacks["place"] = [sym("apple")];
   assert.deepEqual<Context["stacks"]>(ctx.stacks, stacks);
 });
 
@@ -119,16 +139,14 @@ test("settle infinite loop which never settles", () => {
   assert.throws(() => settle(ctx));
   const stacks: Context["stacks"] = {};
   stacks["song that never ends"] = [
-    [
-      sym("it"),
-      sym("just"),
-      sym("goes"),
-      sym("on"),
-      sym("and"),
-      sym("on"),
-      sym("my"),
-      sym("friend"),
-    ],
+    sym("it"),
+    sym("just"),
+    sym("goes"),
+    sym("on"),
+    sym("and"),
+    sym("on"),
+    sym("my"),
+    sym("friend"),
   ];
   assert.deepEqual<Context["stacks"]>(ctx.stacks, stacks);
 });
@@ -141,7 +159,7 @@ test("empty stack name works", () => {
   const ctx = context(parse(program));
   settle(ctx);
   const stacks: Context["stacks"] = {};
-  stacks[""] = [[sym("okay")]];
+  stacks[""] = [sym("okay")];
   assert.deepEqual<Context["stacks"]>(ctx.stacks, stacks);
 });
 
@@ -156,7 +174,7 @@ test("previously matching cause then falls through to a narrower cause", () => {
   const stacks: Context["stacks"] = {};
   stacks["triangle"] = [];
   stacks["square"] = [];
-  stacks["circle"] = [[sym("")]];
+  stacks["circle"] = [sym("")];
   assert.deepEqual<Context["stacks"]>(ctx.stacks, stacks);
 });
 
@@ -171,10 +189,10 @@ test("single symbol variable matches across two causes", () => {
   const ctx = context(parse(program));
   settle(ctx);
   const stacks: Context["stacks"] = {};
-  stacks["dolphin"] = [[sym("butter")]];
+  stacks["dolphin"] = [sym("butter")];
   stacks["narwhal"] = [];
   stacks["porpoise"] = [];
-  stacks["answer"] = [[sym("gotchya")]];
+  stacks["answer"] = [sym("gotchya")];
   assert.deepEqual<Context["stacks"]>(ctx.stacks, stacks);
 });
 
@@ -187,7 +205,7 @@ test("single symbol variable matches across cause and effect", () => {
   settle(ctx);
   const stacks: Context["stacks"] = {};
   stacks["tree"] = [];
-  stacks["how tall"] = [[sym("very"), sym("tall")]];
+  stacks["how tall"] = [sym("very"), sym("tall")];
   assert.deepEqual<Context["stacks"]>(ctx.stacks, stacks);
 });
 
@@ -200,7 +218,7 @@ test("causes which keep their stacks", () => {
   const ctx = context(parse(program));
   settle(ctx);
   const stacks: Context["stacks"] = {};
-  stacks["produce"] = [[sym("some"), sym("brocolli")]];
+  stacks["produce"] = [sym("some"), sym("brocolli")];
   stacks["dairy"] = [];
   assert.deepEqual<Context["stacks"]>(ctx.stacks, stacks);
 });
@@ -209,14 +227,14 @@ test("matching multi-word symbols with variables", () => {
   const program = `
   | :prepare: [birthday party!] | :decorations: streamers
   | :party: $whose $kind | :prepare: $kind :calendar: $whose $kind
-  || :party: my [birthday party!] 
+  || :party: my [birthday party!]
   `;
   const ctx = context(parse(program));
   settle(ctx);
   const stacks: Context["stacks"] = {};
   stacks["party"] = [];
   stacks["prepare"] = [];
-  stacks["calendar"] = [[sym("my"), sym("birthday party!")]];
-  stacks["decorations"] = [[sym("streamers")]];
+  stacks["calendar"] = [sym("my"), sym("birthday party!")];
+  stacks["decorations"] = [sym("streamers")];
   assert.deepEqual<Context["stacks"]>(ctx.stacks, stacks);
 });

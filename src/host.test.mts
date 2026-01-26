@@ -80,8 +80,7 @@ test("host onStepped successfully takes stuff off of a stack before the program"
   const host = createHost(program);
   const fn = mock.fn();
   host.onStepped((ctx) => {
-    // TODO: probably want convenience functions to do this stuff
-    fn(ctx.stacks["@host"]?.pop());
+    fn(ctx.stacks["@host"]?.splice(0, ctx.stacks["@host"].length));
   });
   host.settle();
   // Called once for initialization, and once more finding no matches
@@ -121,7 +120,7 @@ test("host.settleWith can prepend rules for a single execution", () => {
   assert.deepEqual<AST>(host.ctx.ast, hostWithExpectedAst.ctx.ast);
   const expectedStacks: Context["stacks"] = {};
   expectedStacks["i"] = [];
-  expectedStacks["you"] = [[sym("believe")]];
+  expectedStacks["you"] = [sym("believe")];
   assert.deepEqual<Context["stacks"]>(host.ctx.stacks, expectedStacks);
 });
 
@@ -138,7 +137,7 @@ test("host.settleWith can append rules for a single execution", () => {
   assert.deepEqual<AST>(host.ctx.ast, hostWithExpectedAst.ctx.ast);
   const expectedStacks: Context["stacks"] = {};
   expectedStacks["i"] = [];
-  expectedStacks["we"] = [[sym("believe")]];
+  expectedStacks["we"] = [sym("believe")];
   assert.deepEqual<Context["stacks"]>(host.ctx.stacks, expectedStacks);
 });
 
@@ -156,7 +155,7 @@ test("host.settleWith runs any initializers appended or prepended", () => {
   assert.deepEqual<AST>(host.ctx.ast, hostWithExpectedAst.ctx.ast);
   const expectedStacks: Context["stacks"] = {};
   expectedStacks["i"] = [];
-  expectedStacks["you"] = [[sym("believe")]];
-  expectedStacks["we"] = [[sym("believe")]];
+  expectedStacks["you"] = [sym("believe")];
+  expectedStacks["we"] = [sym("believe")];
   assert.deepEqual<Context["stacks"]>(host.ctx.stacks, expectedStacks);
 });

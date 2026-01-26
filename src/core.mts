@@ -7,7 +7,7 @@ import {
 } from "./parser.mts";
 
 export type Tuple = Array<Symbol>;
-export type Stack = Array<Tuple>;
+export type Stack = Tuple;
 
 export type Context = {
   ast: AST;
@@ -31,7 +31,7 @@ export const fulfillEffect: (ctx: Context, effect: Pattern) => void = (
 ) => {
   if (!stacks[stack]) stacks[stack] = [];
   stacks[stack].push(
-    symbols.map((s) =>
+    ...symbols.map((s) =>
       s.type === "simple" ? s : sym(variableValuesByName[s.value]),
     ),
   );
@@ -39,23 +39,22 @@ export const fulfillEffect: (ctx: Context, effect: Pattern) => void = (
 
 export const maybePopMatchingCause: (ctx: Context, cause: Pattern) => void = (
   { stacks },
-  { stack, keep },
+  { stack, symbols, keep },
 ) => {
   if (!stacks[stack]) throw new Error(`Unexpected missing stack '${stack}'`);
   if (keep) return;
-  stacks[stack].pop();
+  symbols.forEach(() => stacks[stack]!.pop());
 };
 
 export const matchesCause: (ctx: Context, cause: Pattern) => boolean = (
   { stacks, variableValuesByName },
   { stack, symbols },
 ) => {
-  const top = stacks[stack]?.at(-1);
-  if (top === undefined) return false;
-  if (top.length !== symbols.length) return false;
-  for (let index = 0; index < top.length; index++) {
-    const symbolOnStack = top.at(index);
-    const givenSymbol = symbols.at(index);
+  if (!stacks[stack]) return false;
+  if (stacks[stack].length == 0) return false;
+  for (let index = 1; index <= symbols.length; index++) {
+    const symbolOnStack = stacks[stack].at(-index);
+    const givenSymbol = symbols.at(-index);
     if (!symbolOnStack) throw new Error("Unexpected undefined symbol on stack");
     if (!givenSymbol) throw new Error("Unexpected undefined given symbol");
     if (symbolOnStack.type === "variable")
