@@ -1,5 +1,5 @@
 import { parse, context, settle } from "./index.mts";
-import { prettyTuple } from "./pretty.mts";
+import { prettyStacks } from "./pretty.mts";
 
 const program = `
   | :produce: some brocolli? :dairy: swiss cheese | :dairy: brie
@@ -12,12 +12,4 @@ const ctx = context(ast);
 settle(ctx);
 
 console.log("Stacks:");
-for (const [name, tuples] of Object.entries(ctx.stacks)) {
-  console.log(
-    `:${name}: ${
-      tuples.length === 0
-        ? "<empty>"
-        : tuples.map((tuple) => prettyTuple(tuple)).join(", ")
-    }`,
-  );
-}
+prettyStacks(ctx.stacks);

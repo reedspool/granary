@@ -88,21 +88,31 @@ export const findMatchingRule: (ctx: Context) => Rule | null = (ctx) => {
   return null;
 };
 
+// Performs initializers (rules with empty causes). Returns true if it did any
+// Runs on the given rules, not the `ctx.ast.rules` to usable with ephemeral
+// rule sets
+export const fullfillInitializers: (
+  ctx: Context,
+  rules: Array<Rule>,
+) => boolean = (ctx, rules) => {
+  let matched = false;
+  for (const rule of rules) {
+    if (rule.causes.length === 0) {
+      for (const effect of rule.effects) {
+        matched = true;
+        fulfillEffect(ctx, effect);
+      }
+    }
+  }
+  return matched;
+};
+
 // Returns true if a rule matched, false if not
 export const step: (ctx: Context) => boolean = (ctx) => {
   // First, distinct pass which matches only all empty causes
   if (!ctx.initialized) {
-    let matched = false;
-    for (const rule of ctx.ast.rules) {
-      if (rule.causes.length === 0) {
-        for (const effect of rule.effects) {
-          matched = true;
-          fulfillEffect(ctx, effect);
-        }
-      }
-    }
     ctx.initialized = true;
-    return matched;
+    return fullfillInitializers(ctx, ctx.ast.rules);
   }
 
   // Main loop. Search for a matching cause

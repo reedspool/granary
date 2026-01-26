@@ -1,6 +1,6 @@
 import test, { mock } from "node:test";
 import assert from "node:assert/strict";
-import { parse, sym } from "./parser.mts";
+import { parse, parseRule, sym, type AST } from "./parser.mts";
 import { context, type Context } from "./core.mts";
 import { createHost, Host } from "./host.mts";
 
@@ -93,4 +93,70 @@ test("host.settle traps infinite loops", () => {
   const program = "||:stayin alive: |:stayin alive: ?|";
   const host = createHost(program);
   assert.throws(() => host.settle());
+});
+
+test("host.settleWith with no options is the same as settle", () => {
+  const program = "||:du: hast |:du: $a| :was: $a";
+  const hostForSettle = createHost(program);
+  const hostForSettleWithNoOpts = createHost(program);
+  const hostForSettleWithEmptyOpts = createHost(program);
+
+  hostForSettle.settle();
+  hostForSettleWithNoOpts.settleWith();
+  hostForSettleWithEmptyOpts.settleWith();
+  assert.deepEqual<Context>(hostForSettle.ctx, hostForSettleWithNoOpts.ctx);
+  assert.deepEqual<Context>(hostForSettle.ctx, hostForSettleWithEmptyOpts.ctx);
+});
+
+test("host.settleWith can prepend rules for a single execution", () => {
+  const program = "||:i: believe";
+  const host = createHost(program);
+  const hostWithExpectedAst = createHost(program);
+  host.settle();
+  hostWithExpectedAst.settle();
+
+  host.settleWith({
+    prepend: [parseRule("|:i: $a | :you: $a")],
+  });
+  assert.deepEqual<AST>(host.ctx.ast, hostWithExpectedAst.ctx.ast);
+  const expectedStacks: Context["stacks"] = {};
+  expectedStacks["i"] = [];
+  expectedStacks["you"] = [[sym("believe")]];
+  assert.deepEqual<Context["stacks"]>(host.ctx.stacks, expectedStacks);
+});
+
+test("host.settleWith can append rules for a single execution", () => {
+  const program = "||:i: believe";
+  const host = createHost(program);
+  const hostWithExpectedAst = createHost(program);
+  host.settle();
+  hostWithExpectedAst.settle();
+
+  host.settleWith({
+    append: [parseRule("|:i: $a | :we: $a")],
+  });
+  assert.deepEqual<AST>(host.ctx.ast, hostWithExpectedAst.ctx.ast);
+  const expectedStacks: Context["stacks"] = {};
+  expectedStacks["i"] = [];
+  expectedStacks["we"] = [[sym("believe")]];
+  assert.deepEqual<Context["stacks"]>(host.ctx.stacks, expectedStacks);
+});
+
+test("host.settleWith runs any initializers appended or prepended", () => {
+  const program = "||:i: believe";
+  const host = createHost(program);
+  const hostWithExpectedAst = createHost(program);
+  host.settle();
+  hostWithExpectedAst.settle();
+
+  host.settleWith({
+    prepend: [parseRule("|| :you:"), parseRule("|:i: $a? :you:| :you: $a")],
+    append: [parseRule("|:i: $a | :we: $a")],
+  });
+  assert.deepEqual<AST>(host.ctx.ast, hostWithExpectedAst.ctx.ast);
+  const expectedStacks: Context["stacks"] = {};
+  expectedStacks["i"] = [];
+  expectedStacks["you"] = [[sym("believe")]];
+  expectedStacks["we"] = [[sym("believe")]];
+  assert.deepEqual<Context["stacks"]>(host.ctx.stacks, expectedStacks);
 });

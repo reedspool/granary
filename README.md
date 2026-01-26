@@ -6,6 +6,12 @@ A version of Nova in TypeScript
 
 [![xc compatible](https://xcfile.dev/badge.svg)](https://xcfile.dev)
 
+### install
+
+```sh
+npm install
+```
+
 ### test
 
 interactive: true
