@@ -34,7 +34,7 @@ document.body.addEventListener("click", (event) => {
 host.onSettled((ctx) => {
   $("[nv-value]").forEach((el) => {
     const stack = el.getAttribute("nv-value")!;
-    const value = ctx.stacks[stack]?.at(0) ?? [];
+    const value = ctx.stacks[stack] ?? [];
     const pretty = prettyTuple(value);
     if ("value" in el) el.value = pretty;
     else el.setAttribute("value", pretty);
@@ -49,15 +49,13 @@ host.onStepped((ctx) => {
     const n = ctx.variableValuesByName["n"];
     const stackName = ctx.variableValuesByName["stackName"]!;
     const operation = ctx.variableValuesByName["operation"]!;
-    const popped = ctx.stacks[stackName]!.pop();
-    if (popped?.length !== 1)
-      throw new Error(
-        `Expected a single value on top of stack '${stackName}' but instead got '${popped ? prettyTuple(popped) : "undefined"}' `,
-      );
-    const poppedValue = Number(popped.at(0)!.value);
+    const popped = ctx.stacks[stackName]?.pop();
+    if (!popped)
+      throw new Error(`Unexpected empty or non-existant stack '${stackName}'`);
+    const poppedValue = Number(popped.value);
     if (Number.isNaN(poppedValue))
       throw new Error(
-        `Unable to parse value '${popped.at(0)?.value}' on top of stack '${stackName}' as Number`,
+        `Unable to parse value '${popped.value}' on top of stack '${stackName}' as Number`,
       );
     const nValue = Number(n);
     if (Number.isNaN(nValue))
@@ -71,7 +69,7 @@ host.onStepped((ctx) => {
     else if (operation == "divide") result /= nValue;
     else if (operation == "mod") result %= nValue;
     else throw new Error(`Unknown operation '${operation}'`);
-    ctx.stacks[stackName]!.push([sym(String(result))]);
+    ctx.stacks[stackName]!.push(sym(String(result)));
   }
   console.log("Stacks:");
   console.log(prettyStacks(ctx.stacks));
