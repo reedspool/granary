@@ -334,6 +334,83 @@ test("Rule with no effects before another rule", () => {
   });
 });
 
+test("Rule with no effects EOF", () => {
+  const program = `
+  | | :produce: some 
+  | :dairy: brie |
+`;
+  assert.deepEqual<AST>(parse(program), {
+    rules: [
+      {
+        causes: [],
+        effects: [
+          {
+            stack: "produce",
+            symbols: [sym("some")],
+          },
+        ],
+      },
+      {
+        causes: [
+          {
+            stack: "dairy",
+            symbols: [sym("brie")],
+          },
+        ],
+        effects: [],
+      },
+    ],
+  });
+});
+
+test("Effect with no symbols (empty card) before another rule", () => {
+  const program = `
+    || ::
+    || :portal: hell
+  `;
+  assert.deepEqual<AST>(parse(program), {
+    rules: [
+      {
+        causes: [],
+        effects: [
+          {
+            stack: "",
+            symbols: [sym("")],
+          },
+        ],
+      },
+      {
+        causes: [],
+        effects: [
+          {
+            stack: "portal",
+            symbols: [sym("hell")],
+          },
+        ],
+      },
+    ],
+  });
+});
+
+test("Effect with no symbols (empty card) before EOF", () => {
+  const program = `
+    || ::
+  `;
+  assert.deepEqual<AST>(parse(program), {
+    rules: [
+      {
+        causes: [],
+        effects: [
+          {
+            stack: "",
+            symbols: [sym("")],
+          },
+        ],
+      },
+    ],
+  });
+});
+
 test("kitchen sink", () => {
   const program = `
   |!f! abcd | @qualm@ rabbit architect

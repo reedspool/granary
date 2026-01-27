@@ -71,13 +71,15 @@ export const parse: (
   const finishCurrentPattern = () => {
     if (!currentPattern.modified) return;
 
-    const target =
-      subState === "reading_cause" ? currentRule.causes : currentRule.effects;
-
     const newPattern: Pattern = {
       stack: currentPattern.stack.trim(),
       symbols: currentPattern.symbols,
     };
+
+    if (newPattern.symbols.length === 0) {
+      newPattern.symbols.push(sym(""));
+    }
+
     if (subState === "reading_cause") {
       const last = newPattern.symbols.at(-1);
       if (last?.value.at(-1) === "?") {
@@ -86,6 +88,8 @@ export const parse: (
       }
     }
 
+    const target =
+      subState === "reading_cause" ? currentRule.causes : currentRule.effects;
     target.push(newPattern);
     currentRule.modified = true;
 
@@ -126,11 +130,11 @@ export const parse: (
       } else if (/\S/.test(char)) {
         inner_delimiter = char;
         state = "reading_stack_name";
+        currentPattern.modified = true;
       }
     } else if (state === "reading_stack_name") {
       if (inner_delimiter === char) {
         state = "find_symbol";
-        currentSymbol.store = true;
       } else {
         currentPattern.stack += char;
         currentPattern.modified = true;
