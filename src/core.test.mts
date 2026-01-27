@@ -55,6 +55,17 @@ test("findMatchingRule can match more symbols than the given effect", () => {
   assert.deepEqual<Rule | null>(found, expected);
 });
 
+test("findMatchingRule no match with fewer symbols on the stack than the cause", () => {
+  const program = `
+    ||:goofy: pluto minnie
+    |:goofy: daffy pluto minnie
+  `;
+  const ctx = context(parse(program));
+  step(ctx);
+  const found = findMatchingRule(ctx);
+  assert.deepEqual<Rule | null>(found, null);
+});
+
 test("step handles all the initializers at once", () => {
   const program = `
     ||:a:

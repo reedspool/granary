@@ -55,7 +55,7 @@ export const matchesCause: (ctx: Context, cause: Pattern) => boolean = (
   for (let index = 1; index <= symbols.length; index++) {
     const symbolOnStack = stacks[stack].at(-index);
     const givenSymbol = symbols.at(-index);
-    if (!symbolOnStack) throw new Error("Unexpected undefined symbol on stack");
+    if (!symbolOnStack) return false;
     if (!givenSymbol) throw new Error("Unexpected undefined given symbol");
     if (symbolOnStack.type === "variable")
       throw new Error("Unexpected variable on stack");
