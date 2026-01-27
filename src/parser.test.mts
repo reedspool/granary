@@ -339,7 +339,7 @@ test("kitchen sink", () => {
   |!f! abcd | @qualm@ rabbit architect
   || :colors: can be blue
   |:I: will keep this thank you? :and this too: please?|
-  :More#$!@#$%^&() crazy characters:
+  :More#$!@#$%^&(){}[]*/\\?><>.,~\`| crazy characters:
 `;
   assert.deepEqual<AST>(parse(program), {
     rules: [
@@ -387,7 +387,7 @@ test("kitchen sink", () => {
         ],
         effects: [
           {
-            stack: "More#$!@#$%^&() crazy characters",
+            stack: "More#$!@#$%^&(){}[]*/\\?><>.,~\`| crazy characters",
             symbols: [sym("")],
           },
         ],
