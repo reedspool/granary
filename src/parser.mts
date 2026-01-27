@@ -3,7 +3,8 @@ export type Symbol =
   | {
       type: "variable";
       value: string;
-    };
+    }
+  | { type: "hostExpression"; value: string };
 
 export const sym: (value?: string, type?: Symbol["type"]) => Symbol = (
   value = "",
@@ -46,7 +47,8 @@ export const parse: (
     | "find_inner_delimiter"
     | "reading_stack_name"
     | "find_symbol"
-    | "read_symbol" = "find_outer_delimiter";
+    | "read_symbol"
+    | "read_expression" = "find_outer_delimiter";
   let subState: "reading_cause" | "reading_effect" = "reading_cause";
   let outer_delimiter: string | null = null;
   let inner_delimiter: string | null = null;
@@ -59,10 +61,16 @@ export const parse: (
 
   const finishCurrentSymbol = () => {
     if (!currentSymbol.store) return;
-    const symbol = sym(currentSymbol.value);
-    if (currentSymbol.value.startsWith("$")) {
+    const symbol = sym(currentSymbol.value, currentSymbol.type);
+    if (
+      currentSymbol.type === "simple" &&
+      currentSymbol.value.startsWith("$")
+    ) {
       symbol.value = symbol.value.slice(1);
       symbol.type = "variable";
+    }
+    if (currentSymbol.type === "hostExpression") {
+      symbol.value = symbol.value.trim();
     }
     currentPattern.symbols.push(symbol);
     currentPattern.modified = true;
@@ -159,6 +167,10 @@ export const parse: (
         finishCurrentSymbol();
         finishCurrentPattern();
         state = "reading_stack_name";
+      } else if ("{" === char) {
+        finishCurrentSymbol();
+        state = "read_expression";
+        currentSymbol.type = "hostExpression";
       } else if (state === "find_symbol") {
         if (/\s/.test(char)) {
           // Do nothing
@@ -181,6 +193,14 @@ export const parse: (
           currentSymbol.value += char;
           currentSymbol.store = true;
         }
+      }
+    } else if (state === "read_expression") {
+      if ("}" === char) {
+        finishCurrentSymbol();
+        state = "find_symbol";
+      } else {
+        currentSymbol.value += char;
+        currentSymbol.store = true;
       }
     }
     index++;

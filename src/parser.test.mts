@@ -1,6 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { parse, parseRule, sym, type AST } from "./parser.mts";
+import { parse, parseRule, pattern, sym, type AST } from "./parser.mts";
 
 test("test framework works", () => {
   assert.strictEqual(1, 1);
@@ -405,6 +405,56 @@ test("Effect with no symbols (empty card) before EOF", () => {
             stack: "",
             symbols: [sym("")],
           },
+        ],
+      },
+    ],
+  });
+});
+
+test("Host expressions in effect", () => {
+  // Note the stack delimiters `:`, expression delimiters `{` and `}`, and
+  // newlines '\n' within the expressions
+  const program = `
+    || :results:
+       {.1 + .2} { 1 + 2 } {50 % 4} {"abcd" + " " + 52}
+       {true} {5 < 4} {Math.pow(2,25)} {undefined} {new Error()}
+  `;
+  assert.deepEqual<AST>(parse(program), {
+    rules: [
+      {
+        causes: [],
+        effects: [
+          pattern("results", [
+            sym(".1 + .2", "hostExpression"),
+            sym("1 + 2", "hostExpression"),
+            sym("50 % 4", "hostExpression"),
+            sym('"abcd" + " " + 52', "hostExpression"),
+            sym("true", "hostExpression"),
+            sym("5 < 4", "hostExpression"),
+            sym("Math.pow(2,25)", "hostExpression"),
+            sym("undefined", "hostExpression"),
+            sym("new Error()", "hostExpression"),
+          ]),
+        ],
+      },
+    ],
+  });
+});
+
+test("Host expressions in effect with more simple symbols", () => {
+  const program = `
+    || :results: a {.1 + .2} b
+  `;
+  assert.deepEqual<AST>(parse(program), {
+    rules: [
+      {
+        causes: [],
+        effects: [
+          pattern("results", [
+            sym("a"),
+            sym(".1 + .2", "hostExpression"),
+            sym("b"),
+          ]),
         ],
       },
     ],
