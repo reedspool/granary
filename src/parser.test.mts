@@ -413,11 +413,18 @@ test("Effect with no symbols (empty card) before EOF", () => {
 
 test("Host expressions in effect", () => {
   // Note the stack delimiters `:`, expression delimiters `{` and `}`, and
-  // newlines '\n' within the expressions
+  // newlines `\n` and escaping `\\}` within the expressions
   const program = `
     || :results:
        {.1 + .2} { 1 + 2 } {50 % 4} {"abcd" + " " + 52}
        {true} {5 < 4} {Math.pow(2,25)} {undefined} {new Error()}
+    || :results:
+       {false ? 1 : 0} {"}"} {() => { return "}" }}
+       {"{}"} {"}{}"} {\`}{}\${true}\`}
+       {"\\\"}"}
+       {
+         42
+       } { if (5) { return 5 } else { return 6 } }
   `;
   assert.deepEqual<AST>(parse(program), {
     rules: [
@@ -434,6 +441,22 @@ test("Host expressions in effect", () => {
             sym("Math.pow(2,25)", "hostExpression"),
             sym("undefined", "hostExpression"),
             sym("new Error()", "hostExpression"),
+          ]),
+        ],
+      },
+      {
+        causes: [],
+        effects: [
+          pattern("results", [
+            sym("false ? 1 : 0", "hostExpression"),
+            sym('"}"', "hostExpression"),
+            sym('() => { return "}" }', "hostExpression"),
+            sym('"{}"', "hostExpression"),
+            sym('"}{}"', "hostExpression"),
+            sym("\`}{}\${true}\`", "hostExpression"),
+            sym('"\\\"}"', "hostExpression"),
+            sym("42", "hostExpression"),
+            sym("if (5) { return 5 } else { return 6 }", "hostExpression"),
           ]),
         ],
       },

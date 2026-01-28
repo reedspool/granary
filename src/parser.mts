@@ -36,6 +36,15 @@ export type AST = {
   rules: Array<Rule>;
 };
 
+const bracketMatches = {
+  '"': '"',
+  "'": "'",
+  "`": "`",
+  "(": ")",
+  "{": "}",
+  "[": "]",
+};
+
 export const parse: (
   source: string,
   options?: { stopAfterSingleRule?: boolean },
@@ -58,6 +67,8 @@ export const parse: (
     includeSpaces?: boolean;
     store?: boolean;
   } = sym();
+  let escapeNextCharacter = false;
+  const bracketStack: Array<keyof typeof bracketMatches> = [];
 
   const finishCurrentSymbol = () => {
     if (!currentSymbol.store) return;
@@ -195,7 +206,26 @@ export const parse: (
         }
       }
     } else if (state === "read_expression") {
-      if ("}" === char) {
+      if (escapeNextCharacter) {
+        escapeNextCharacter = false;
+        currentSymbol.value += char;
+        currentSymbol.store = true;
+      } else if ("\\" === char) {
+        escapeNextCharacter = true;
+        currentSymbol.value += char;
+        currentSymbol.store = true;
+      } else if (
+        bracketStack.length > 0 &&
+        bracketMatches[bracketStack.at(-1)!] === char
+      ) {
+        bracketStack.pop();
+        currentSymbol.value += char;
+        currentSymbol.store = true;
+      } else if (char in bracketMatches) {
+        bracketStack.push(char as keyof typeof bracketMatches);
+        currentSymbol.value += char;
+        currentSymbol.store = true;
+      } else if (bracketStack.length === 0 && "}" === char) {
         finishCurrentSymbol();
         state = "find_symbol";
       } else {
