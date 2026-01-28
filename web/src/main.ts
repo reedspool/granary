@@ -39,6 +39,12 @@ host.onSettled((ctx) => {
     if ("value" in el) el.value = pretty;
     else el.setAttribute("value", pretty);
   });
+  $("[nv-content]").forEach((el) => {
+    const stack = el.getAttribute("nv-content")!;
+    const value = ctx.stacks[stack] ?? [];
+    const pretty = prettyTuple(value);
+    el.innerHTML = pretty;
+  });
 });
 host.onStepped((ctx) => {
   const additionCause = parseRule(
