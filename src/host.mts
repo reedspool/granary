@@ -1,5 +1,12 @@
-import { context, fullfillInitializers, step, type Context } from "./core.mts";
-import { parse, type Rule } from "./parser.mts";
+import {
+  context,
+  fullfillInitializers,
+  pop,
+  push,
+  step,
+  type Context,
+} from "./core.mts";
+import { parse, type Rule, type Symbol } from "./parser.mts";
 
 // Not sure if you'll ever want the full rule, since theoretically you matched on the causes already.
 export type MatchingRuleCallback = (ctx: Context) => void;
@@ -62,15 +69,27 @@ export class Host extends EventTarget {
     rules.splice(-1 * numAppended, numAppended);
   }
 
-  onStepped(callback: MatchingRuleCallback) {
-    this.addEventListener(this.hostStepCompletedEventName, () =>
-      callback.call(this, this.ctx),
+  onStepped(callback: MatchingRuleCallback, options?: AddEventListenerOptions) {
+    this.addEventListener(
+      this.hostStepCompletedEventName,
+      () => callback.call(this, this.ctx),
+      options,
     );
   }
 
-  onSettled(callback: MatchingRuleCallback) {
-    this.addEventListener(this.hostSettledEventName, () =>
-      callback.call(this, this.ctx),
+  onSettled(callback: MatchingRuleCallback, options?: AddEventListenerOptions) {
+    this.addEventListener(
+      this.hostSettledEventName,
+      () => callback.call(this, this.ctx),
+      options,
     );
+  }
+
+  push(stack: string, symbol: Symbol) {
+    return push(this.ctx, stack, symbol);
+  }
+
+  pop(stack: string): Symbol | undefined {
+    return pop(this.ctx, stack);
   }
 }

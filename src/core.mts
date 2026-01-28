@@ -166,3 +166,19 @@ export const evaluateHostExpression: (
 
   return fn(...values);
 };
+
+export const push: (ctx: Context, stack: string, symbol: Symbol) => void = (
+  ctx,
+  stack,
+  symbol,
+) => {
+  ctx.stacks[stack] ??= [];
+  ctx.stacks[stack].push(symbol);
+};
+
+export const pop: (ctx: Context, stack: string) => Symbol | undefined = (
+  ctx,
+  stack,
+) => {
+  return ctx.stacks[stack]?.pop();
+};
