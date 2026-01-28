@@ -1,6 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { parse, pattern, rule, sym, type Rule } from "./parser.mts";
+import { parse, pattern, rule, sym, hostSym, type Rule } from "./parser.mts";
 import {
   context,
   settle,
@@ -14,7 +14,7 @@ test("empty context", () => {
     ast: parse(""),
     stacks: {},
     initialized: false,
-    variableValuesByName: {},
+    variableAssignments: {},
   });
 });
 
@@ -247,5 +247,74 @@ test("matching multi-word symbols with variables", () => {
   stacks["prepare"] = [];
   stacks["calendar"] = [sym("my"), sym("birthday party!")];
   stacks["decorations"] = [sym("streamers")];
+  assert.deepEqual<Context["stacks"]>(ctx.stacks, stacks);
+});
+
+test("host expressions in effects evaluate", () => {
+  // Make sure you try everything in parser.test.mts test named
+  // "Host expressions in effect"
+  const program = `
+    || :results:
+       {.1 + .2} { 1 + 2 } {50 % 4} {"abcd" + " " + 52}
+       {true} {5 < 4} {Math.pow(2,25)} {undefined} 
+    || :results:
+       {false ? 1 : 0} {"}"} 
+       {"{}"} {"}{}"} {\`}{}\${true}\`}
+       {"\\\"}"}
+       {
+         42
+       } {{ if (5) { return 5 } else { return 6 } }}
+    || :weird:
+       {() => { return "}" }}
+       {new Error(5 * 9)}
+  `;
+  const ctx = context(parse(program));
+  settle(ctx);
+  const stacks: Context["stacks"] = {};
+  stacks["results"] = [
+    hostSym(0.30000000000000004),
+    hostSym(3),
+    hostSym(2),
+    hostSym("abcd 52"),
+    hostSym(true),
+    hostSym(false),
+    hostSym(33554432),
+    hostSym(undefined),
+    hostSym(0),
+    hostSym("}"),
+    hostSym("{}"),
+    hostSym("}{}"),
+    hostSym("}{}true"),
+    hostSym('"}'),
+    hostSym(42),
+    hostSym(5),
+  ];
+  assert.deepEqual<Context["stacks"][string]>(
+    ctx.stacks["results"],
+    stacks["results"],
+  );
+  let sym = ctx.stacks["weird"]![0]!;
+  assert.equal(sym.type, "hostValue");
+  if (typeof sym.value !== "function") throw new Error();
+  assert.equal(sym.value(), "}");
+  sym = ctx.stacks["weird"]![1]!;
+  assert.equal(sym.type, "hostValue");
+  assert.equal(typeof sym.value, "object");
+  assert.ok(sym.value instanceof Error);
+  assert.equal(sym.value.message, "45");
+});
+
+test("host expressions in effects can use variables from causes", () => {
+  // Make sure you try everything in parser.test.mts test named
+  // "Host expressions in effect"
+  const program = `
+  ||:nambers: {5}
+  |:nambers: $n| :unswers: {$n * 32}
+  `;
+  const ctx = context(parse(program));
+  settle(ctx);
+  const stacks: Context["stacks"] = {};
+  stacks["nambers"] = [];
+  stacks["unswers"] = [hostSym(160)];
   assert.deepEqual<Context["stacks"]>(ctx.stacks, stacks);
 });

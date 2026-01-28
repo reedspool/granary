@@ -1,18 +1,29 @@
-export type Symbol =
+export type SimpleSymbol =
   | { type: "simple"; value: string }
   | {
       type: "variable";
       value: string;
     }
   | { type: "hostExpression"; value: string };
+export type HostValueSymbol = { type: "hostValue"; value: unknown };
+export type Symbol = SimpleSymbol | HostValueSymbol;
+export const simpleSymbolTypes = ["simple", "variable", "hostExpression"];
 
-export const sym: (value?: string, type?: Symbol["type"]) => Symbol = (
-  value = "",
-  type = "simple",
-) => ({
+export const isSimpleSymbol = (symbol: Symbol): symbol is SimpleSymbol => {
+  return simpleSymbolTypes.includes(symbol.type);
+};
+
+export const sym: (
+  value?: string,
+  type?: SimpleSymbol["type"],
+) => SimpleSymbol = (value = "", type = "simple") => ({
   value,
   type,
 });
+
+export const hostSym: (value?: unknown) => HostValueSymbol = (
+  value = undefined,
+) => ({ value, type: "hostValue" });
 
 export type Pattern = {
   stack: string;
@@ -63,7 +74,7 @@ export const parse: (
   let inner_delimiter: string | null = null;
   let currentRule: Rule & { modified?: boolean } = rule();
   let currentPattern: Pattern & { modified?: boolean } = pattern();
-  let currentSymbol: Symbol & {
+  let currentSymbol: SimpleSymbol & {
     includeSpaces?: boolean;
     store?: boolean;
   } = sym();
@@ -72,16 +83,21 @@ export const parse: (
 
   const finishCurrentSymbol = () => {
     if (!currentSymbol.store) return;
-    const symbol = sym(currentSymbol.value, currentSymbol.type);
-    if (
-      currentSymbol.type === "simple" &&
-      currentSymbol.value.startsWith("$")
-    ) {
-      symbol.value = symbol.value.slice(1);
-      symbol.type = "variable";
-    }
-    if (currentSymbol.type === "hostExpression") {
-      symbol.value = symbol.value.trim();
+    let symbol: Symbol;
+    if (isSimpleSymbol(currentSymbol)) {
+      symbol = sym(currentSymbol.value, currentSymbol.type);
+      if (
+        currentSymbol.type === "simple" &&
+        currentSymbol.value.startsWith("$")
+      ) {
+        symbol.value = symbol.value.slice(1);
+        symbol.type = "variable";
+      }
+      if (currentSymbol.type === "hostExpression") {
+        symbol.value = symbol.value.trim();
+      }
+    } else {
+      throw new Error("parsing advanced symbols not implemented");
     }
     currentPattern.symbols.push(symbol);
     currentPattern.modified = true;
@@ -101,7 +117,7 @@ export const parse: (
 
     if (subState === "reading_cause") {
       const last = newPattern.symbols.at(-1);
-      if (last?.value.at(-1) === "?") {
+      if (last && isSimpleSymbol(last) && last.value.at(-1) === "?") {
         last.value = last.value.slice(0, -1);
         newPattern.keep = true;
       }

@@ -424,7 +424,7 @@ test("Host expressions in effect", () => {
        {"\\\"}"}
        {
          42
-       } { if (5) { return 5 } else { return 6 } }
+       } {{ if (5) { return 5 } else { return 6 } }}
   `;
   assert.deepEqual<AST>(parse(program), {
     rules: [
@@ -456,7 +456,7 @@ test("Host expressions in effect", () => {
             sym("\`}{}\${true}\`", "hostExpression"),
             sym('"\\\"}"', "hostExpression"),
             sym("42", "hostExpression"),
-            sym("if (5) { return 5 } else { return 6 }", "hostExpression"),
+            sym("{ if (5) { return 5 } else { return 6 } }", "hostExpression"),
           ]),
         ],
       },

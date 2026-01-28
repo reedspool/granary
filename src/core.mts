@@ -3,7 +3,7 @@ import {
   type Rule,
   type Pattern,
   type Symbol,
-  sym,
+  hostSym,
 } from "./parser.mts";
 
 export type Tuple = Array<Symbol>;
@@ -13,7 +13,7 @@ export type Context = {
   ast: AST;
   stacks: Record<string, Stack>;
   initialized: boolean;
-  variableValuesByName: Record<string, string>;
+  variableAssignments: Record<string, Symbol>;
 };
 
 export const context: (ast: AST) => Context = (ast) => {
@@ -21,19 +21,28 @@ export const context: (ast: AST) => Context = (ast) => {
     ast,
     stacks: {},
     initialized: false,
-    variableValuesByName: {},
+    variableAssignments: {},
   };
 };
 
 export const fulfillEffect: (ctx: Context, effect: Pattern) => void = (
-  { stacks, variableValuesByName },
+  ctx,
   { stack, symbols },
 ) => {
+  const { stacks, variableAssignments } = ctx;
   if (!stacks[stack]) stacks[stack] = [];
   stacks[stack].push(
-    ...symbols.map((s) =>
-      s.type === "simple" ? s : sym(variableValuesByName[s.value]),
-    ),
+    ...symbols.map((s) => {
+      if (s.type === "variable") {
+        const assigned = variableAssignments[s.value];
+        if (!assigned)
+          throw new Error("Unexpected variable '${s.value}' had no assignment");
+        return assigned;
+      } else if (s.type === "hostExpression") {
+        return hostSym(evaluateHostExpression(ctx, s.value));
+      }
+      return s;
+    }),
   );
 };
 
@@ -47,7 +56,7 @@ export const maybePopMatchingCause: (ctx: Context, cause: Pattern) => void = (
 };
 
 export const matchesCause: (ctx: Context, cause: Pattern) => boolean = (
-  { stacks, variableValuesByName },
+  { stacks, variableAssignments },
   { stack, symbols },
 ) => {
   if (!stacks[stack]) return false;
@@ -60,10 +69,12 @@ export const matchesCause: (ctx: Context, cause: Pattern) => boolean = (
     if (symbolOnStack.type === "variable")
       throw new Error("Unexpected variable on stack");
     if (givenSymbol.type === "variable") {
-      if (!variableValuesByName[givenSymbol.value]) {
-        variableValuesByName[givenSymbol.value] = symbolOnStack.value;
+      if (!variableAssignments[givenSymbol.value]) {
+        variableAssignments[givenSymbol.value] = symbolOnStack;
       } else {
-        if (variableValuesByName[givenSymbol.value] !== symbolOnStack.value)
+        if (
+          variableAssignments[givenSymbol.value]!.value !== symbolOnStack.value
+        )
           return false;
       }
     } else {
@@ -75,7 +86,7 @@ export const matchesCause: (ctx: Context, cause: Pattern) => boolean = (
 
 export const findMatchingRule: (ctx: Context) => Rule | null = (ctx) => {
   rules: for (const rule of ctx.ast.rules) {
-    ctx.variableValuesByName = {}; // Reset for each rule
+    ctx.variableAssignments = {}; // Reset for each rule
     // No causes only matches during initialization
     if (rule.causes.length === 0) continue rules;
     for (const cause of rule.causes) {
@@ -137,4 +148,21 @@ export const settle: (ctx: Context) => void = (ctx) => {
     if (!step(ctx)) return;
   }
   throw new Error("Infinite loop tripwire hit");
+};
+
+export const evaluateHostExpression: (
+  ctx: Context,
+  expression: string,
+) => unknown = (ctx, expression) => {
+  const args: Array<string> = [];
+  const values: Array<unknown> = [];
+
+  Object.entries(ctx.variableAssignments).forEach(([key, symbol]) => {
+    args.push("$" + key);
+    values.push(symbol.value);
+  });
+
+  const fn = new Function(...args, `return (() => ${expression})()`);
+
+  return fn(...values);
 };

@@ -46,9 +46,17 @@ host.onStepped((ctx) => {
   ).causes[0]!;
   if (matchesCause(ctx, additionCause)) {
     maybePopMatchingCause(ctx, additionCause);
-    const n = ctx.variableValuesByName["n"];
-    const stackName = ctx.variableValuesByName["stackName"]!;
-    const operation = ctx.variableValuesByName["operation"]!;
+    const n = ctx.variableAssignments["n"];
+    const stackName = ctx.variableAssignments["stackName"]!.value;
+    const operation = ctx.variableAssignments["operation"]!.value;
+    if (typeof operation !== "string") {
+      console.error("Expected string operation but got:", operation);
+      throw new Error("Operation was not a string, see console");
+    }
+    if (typeof stackName !== "string") {
+      console.error("Expected string stackName but got:", stackName);
+      throw new Error("Stack name was not a string, see console");
+    }
     const popped = ctx.stacks[stackName]?.pop();
     if (!popped)
       throw new Error(`Unexpected empty or non-existant stack '${stackName}'`);
@@ -57,7 +65,7 @@ host.onStepped((ctx) => {
       throw new Error(
         `Unable to parse value '${popped.value}' on top of stack '${stackName}' as Number`,
       );
-    const nValue = Number(n);
+    const nValue = Number(n!.value);
     if (Number.isNaN(nValue))
       throw new Error(
         `Unable to parse value '${n}' on stack '${additionCause.stack}'`,
