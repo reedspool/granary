@@ -66,6 +66,25 @@ test("findMatchingRule no match with fewer symbols on the stack than the cause",
   assert.deepEqual<Rule | null>(found, null);
 });
 
+test("step does not settle on initialization", () => {
+  {
+    const ctx = context(parse(""));
+    assert.ok(step(ctx));
+    assert.ok(!step(ctx));
+  }
+  {
+    const ctx = context(parse("||:a:"));
+    assert.ok(step(ctx));
+    assert.ok(!step(ctx));
+  }
+  {
+    const ctx = context(parse("||:a:|:a:|:b:"));
+    assert.ok(step(ctx));
+    assert.ok(step(ctx));
+    assert.ok(!step(ctx));
+  }
+});
+
 test("step handles all the initializers at once", () => {
   const program = `
     ||:a:

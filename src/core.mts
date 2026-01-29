@@ -121,8 +121,9 @@ export const fullfillInitializers: (
 export const step: (ctx: Context) => boolean = (ctx) => {
   // First, distinct pass which matches only all empty causes
   if (!ctx.initialized) {
+    fullfillInitializers(ctx, ctx.ast.rules);
     ctx.initialized = true;
-    return fullfillInitializers(ctx, ctx.ast.rules);
+    return true;
   }
 
   // Main loop. Search for a matching cause
