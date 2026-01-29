@@ -159,3 +159,21 @@ test("host.settleWith runs any initializers appended or prepended", () => {
   expectedStacks["we"] = [sym("believe")];
   assert.deepEqual<Context["stacks"]>(host.ctx.stacks, expectedStacks);
 });
+
+test("host.push pushes on a non-existant stack", () => {
+  const program = "|:non-existant: $f| :got: $f";
+  const host = createHost(program);
+  host.push("non-existant", sym("injected"));
+  host.settle();
+
+  const expectedStacks: Context["stacks"] = {};
+  expectedStacks["got"] = [sym("injected")];
+  expectedStacks["non-existant"] = [];
+  assert.deepEqual<Context["stacks"]>(host.ctx.stacks, expectedStacks);
+});
+
+test("host.pop works on a non-existant stack", () => {
+  const program = "";
+  const host = createHost(program);
+  assert.equal(host.pop("non-existant"), undefined);
+});

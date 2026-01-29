@@ -7,6 +7,8 @@ import {
   type Context,
   findMatchingRule,
   step,
+  push,
+  pop,
 } from "./core.mts";
 
 test("empty context", () => {
@@ -354,4 +356,17 @@ test("Arbitrary substrings in causes matching strings in effects", () => {
   stacks["exclam"] = [sym("pow!")];
   stacks["single letter article"] = [sym("present")];
   assert.deepEqual<Context["stacks"]>(ctx.stacks, stacks);
+});
+
+test("push pushes on a non-existant stack", () => {
+  const ctx = context(parse(""));
+  push(ctx, "non-existant", sym("injected"));
+  const expectedStacks: Context["stacks"] = {};
+  expectedStacks["non-existant"] = [sym("injected")];
+  assert.deepEqual<Context["stacks"]>(ctx.stacks, expectedStacks);
+});
+
+test("host.pop works on a non-existant stack", () => {
+  const ctx = context(parse(""));
+  assert.equal(pop(ctx, "non-existant"), undefined);
 });
