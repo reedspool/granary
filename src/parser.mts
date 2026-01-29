@@ -4,7 +4,8 @@ export type SimpleSymbol =
       type: "variable";
       value: string;
     }
-  | { type: "hostExpression"; value: string };
+  | { type: "hostExpression"; value: string }
+  | { type: "char"; value: string };
 export type HostValueSymbol = { type: "hostValue"; value: unknown };
 export type Symbol = SimpleSymbol | HostValueSymbol;
 export const simpleSymbolTypes = ["simple", "variable", "hostExpression"];
@@ -68,7 +69,8 @@ export const parse: (
     | "reading_stack_name"
     | "find_symbol"
     | "read_symbol"
-    | "read_expression" = "find_outer_delimiter";
+    | "read_expression"
+    | "read_string_symbol" = "find_outer_delimiter";
   let subState: "reading_cause" | "reading_effect" = "reading_cause";
   let outer_delimiter: string | null = null;
   let inner_delimiter: string | null = null;
@@ -77,15 +79,19 @@ export const parse: (
   let currentSymbol: SimpleSymbol & {
     includeSpaces?: boolean;
     store?: boolean;
+    collectingString?: boolean;
   } = sym();
   let escapeNextCharacter = false;
   const bracketStack: Array<keyof typeof bracketMatches> = [];
 
   const finishCurrentSymbol = () => {
     if (!currentSymbol.store) return;
-    let symbol: Symbol;
-    if (isSimpleSymbol(currentSymbol)) {
-      symbol = sym(currentSymbol.value, currentSymbol.type);
+    if (currentSymbol.collectingString) {
+      currentSymbol.value
+        .split("")
+        .forEach((char) => currentPattern.symbols.push(sym(char, "char")));
+    } else if (isSimpleSymbol(currentSymbol)) {
+      let symbol = sym(currentSymbol.value, currentSymbol.type);
       if (
         currentSymbol.type === "simple" &&
         currentSymbol.value.startsWith("$")
@@ -96,10 +102,10 @@ export const parse: (
       if (currentSymbol.type === "hostExpression") {
         symbol.value = symbol.value.trim();
       }
+      currentPattern.symbols.push(symbol);
     } else {
       throw new Error("parsing advanced symbols not implemented");
     }
-    currentPattern.symbols.push(symbol);
     currentPattern.modified = true;
     currentSymbol = sym();
   };
@@ -201,9 +207,14 @@ export const parse: (
       } else if (state === "find_symbol") {
         if (/\s/.test(char)) {
           // Do nothing
+        } else if ('"' === char) {
+          state = "read_string_symbol";
+          currentSymbol.store = true;
+          currentSymbol.collectingString = true;
         } else if ("[" === char) {
           state = "read_symbol";
           currentSymbol.includeSpaces = true;
+          currentSymbol.store = true;
         } else {
           state = "read_symbol";
           currentSymbol.value += char;
@@ -220,6 +231,22 @@ export const parse: (
           currentSymbol.value += char;
           currentSymbol.store = true;
         }
+      }
+    } else if (state === "read_string_symbol") {
+      if (escapeNextCharacter) {
+        escapeNextCharacter = false;
+        currentSymbol.value += char;
+        currentSymbol.store = true;
+      } else if ("\\" === char) {
+        escapeNextCharacter = true;
+        currentSymbol.value += char;
+        currentSymbol.store = true;
+      } else if ('"' === char) {
+        finishCurrentSymbol();
+        state = "find_symbol";
+      } else {
+        currentSymbol.value += char;
+        currentSymbol.store = true;
       }
     } else if (state === "read_expression") {
       if (escapeNextCharacter) {

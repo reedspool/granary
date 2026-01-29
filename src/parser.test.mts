@@ -484,12 +484,82 @@ test("Host expressions in effect with more simple symbols", () => {
   });
 });
 
+test("Strings in effects", () => {
+  const program = `
+    || :bmx: shocks "Fun bikes!? } \\"" pikachu
+  `;
+  assert.deepEqual<AST>(parse(program), {
+    rules: [
+      {
+        causes: [],
+        effects: [
+          pattern("bmx", [
+            sym("shocks"),
+            sym("F", "char"),
+            sym("u", "char"),
+            sym("n", "char"),
+            sym(" ", "char"),
+            sym("b", "char"),
+            sym("i", "char"),
+            sym("k", "char"),
+            sym("e", "char"),
+            sym("s", "char"),
+            sym("!", "char"),
+            sym("?", "char"),
+            sym(" ", "char"),
+            sym("}", "char"),
+            sym(" ", "char"),
+            sym("\\", "char"),
+            sym('"', "char"),
+            sym("pikachu"),
+          ]),
+        ],
+      },
+    ],
+  });
+});
+
+test("Strings in causes", () => {
+  const program = `
+    |:bmx: shocks "Fun bikes!? } \\"" pikachu|
+  `;
+  assert.deepEqual<AST>(parse(program), {
+    rules: [
+      {
+        causes: [
+          pattern("bmx", [
+            sym("shocks"),
+            sym("F", "char"),
+            sym("u", "char"),
+            sym("n", "char"),
+            sym(" ", "char"),
+            sym("b", "char"),
+            sym("i", "char"),
+            sym("k", "char"),
+            sym("e", "char"),
+            sym("s", "char"),
+            sym("!", "char"),
+            sym("?", "char"),
+            sym(" ", "char"),
+            sym("}", "char"),
+            sym(" ", "char"),
+            sym("\\", "char"),
+            sym('"', "char"),
+            sym("pikachu"),
+          ]),
+        ],
+        effects: [],
+      },
+    ],
+  });
+});
+
 test("kitchen sink", () => {
   const program = `
   |!f! abcd | @qualm@ rabbit architect
   || :colors: can be blue
   |:I: will keep this thank you? :and this too: please?|
-  :More#$!@#$%^&(){}[]*/\\?><>.,~\`| crazy characters:
+  :More"'#$!@#$%^&(){}[]*/\\?><>.,~\`| crazy characters:
 `;
   assert.deepEqual<AST>(parse(program), {
     rules: [
@@ -537,7 +607,7 @@ test("kitchen sink", () => {
         ],
         effects: [
           {
-            stack: "More#$!@#$%^&(){}[]*/\\?><>.,~\`| crazy characters",
+            stack: "More\"'#$!@#$%^&(){}[]*/\\?><>.,~\`| crazy characters",
             symbols: [sym("")],
           },
         ],

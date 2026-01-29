@@ -337,3 +337,21 @@ test("host expressions in effects can use variables from causes", () => {
   stacks["unswers"] = [hostSym(160)];
   assert.deepEqual<Context["stacks"]>(ctx.stacks, stacks);
 });
+
+test("Arbitrary substrings in causes matching strings in effects", () => {
+  const program = `
+    ||:party: "We're having a party!"
+    |:party: "We"| :us: ya
+    |:party: "!" | :exclam: pow!
+    |:party: "having " $a " party" | :single letter article: present
+    |:party: $a|
+  `;
+  const ctx = context(parse(program));
+  settle(ctx);
+  const stacks: Context["stacks"] = {};
+  stacks["party"] = [];
+  stacks["us"] = [sym("ya")];
+  stacks["exclam"] = [sym("pow!")];
+  stacks["single letter article"] = [sym("present")];
+  assert.deepEqual<Context["stacks"]>(ctx.stacks, stacks);
+});
