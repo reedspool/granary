@@ -119,7 +119,6 @@ test("host.settleWith can prepend rules for a single execution", () => {
   });
   assert.deepEqual<AST>(host.ctx.ast, hostWithExpectedAst.ctx.ast);
   const expectedStacks: Context["stacks"] = {};
-  expectedStacks["i"] = [];
   expectedStacks["you"] = [sym("believe")];
   assert.deepEqual<Context["stacks"]>(host.ctx.stacks, expectedStacks);
 });
@@ -136,7 +135,6 @@ test("host.settleWith can append rules for a single execution", () => {
   });
   assert.deepEqual<AST>(host.ctx.ast, hostWithExpectedAst.ctx.ast);
   const expectedStacks: Context["stacks"] = {};
-  expectedStacks["i"] = [];
   expectedStacks["we"] = [sym("believe")];
   assert.deepEqual<Context["stacks"]>(host.ctx.stacks, expectedStacks);
 });
@@ -154,7 +152,6 @@ test("host.settleWith runs any initializers appended or prepended", () => {
   });
   assert.deepEqual<AST>(host.ctx.ast, hostWithExpectedAst.ctx.ast);
   const expectedStacks: Context["stacks"] = {};
-  expectedStacks["i"] = [];
   expectedStacks["you"] = [sym("believe")];
   expectedStacks["we"] = [sym("believe")];
   assert.deepEqual<Context["stacks"]>(host.ctx.stacks, expectedStacks);
@@ -168,7 +165,6 @@ test("host.push pushes on a non-existant stack", () => {
 
   const expectedStacks: Context["stacks"] = {};
   expectedStacks["got"] = [sym("injected")];
-  expectedStacks["non-existant"] = [];
   assert.deepEqual<Context["stacks"]>(host.ctx.stacks, expectedStacks);
 });
 

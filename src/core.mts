@@ -47,12 +47,17 @@ export const fulfillEffect: (ctx: Context, effect: Pattern) => void = (
 };
 
 export const maybePopMatchingCause: (ctx: Context, cause: Pattern) => void = (
-  { stacks },
+  ctx,
   { stack, symbols, keep },
 ) => {
-  if (!stacks[stack]) throw new Error(`Unexpected missing stack '${stack}'`);
+  if (!ctx.stacks[stack])
+    throw new Error(`Unexpected missing stack '${stack}'`);
+  if (ctx.stacks[stack].length < symbols.length)
+    throw new Error(
+      `Unexpected stack '${stack}' had fewer items than matched symbols`,
+    );
   if (keep) return;
-  symbols.forEach(() => stacks[stack]!.pop());
+  symbols.forEach(() => pop(ctx, stack));
 };
 
 export const matchesCause: (ctx: Context, cause: Pattern) => boolean = (
@@ -181,5 +186,7 @@ export const pop: (ctx: Context, stack: string) => Symbol | undefined = (
   ctx,
   stack,
 ) => {
-  return ctx.stacks[stack]?.pop();
+  const popped = ctx.stacks[stack]?.pop();
+  if (ctx.stacks[stack]?.length === 0) delete ctx.stacks[stack];
+  return popped;
 };
