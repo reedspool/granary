@@ -78,7 +78,17 @@ Run the CLI to execute source files
 interactive: true
 
 ```
-node cli/src/cli.mts # <src.nv>
+node cli/src/cli.mts run # --verbose <src.nv>
+```
+
+### repl
+
+Run the CLI in REPL mode to execute source files
+
+interactive: true
+
+```
+node cli/src/cli.mts repl # --verbose [src.nv]
 ```
 
 ### build-cli
