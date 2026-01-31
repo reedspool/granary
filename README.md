@@ -71,7 +71,26 @@ interactive: true
 node --inspect-brk src/example-usage.mts
 ```
 
-### build
+### cli
+
+Run the CLI to execute source files
+
+interactive: true
+
+```
+node cli/src/cli.mts # <src.nv>
+```
+
+### build-cli
+
+Build the CLI into a single file executable.
+
+```
+echo "Not yet implemented, planning to use Node v25.5.0 --build-sea"
+exit 1;
+```
+
+### build-module
 
 Build the language implementation from its TypeScript source files into a single
 JS file for use as a package. Configured in `tsdown.config.mts`
@@ -80,7 +99,7 @@ JS file for use as a package. Configured in `tsdown.config.mts`
 npx tsdown
 ```
 
-### build-watch
+### build-module-watch
 
 Continuous version of the above, useful for playing with the webpage while
 developing the core lib.

@@ -1,0 +1,16 @@
+{
+  "name": "granary-cli",
+  "version": "1.0.0",
+  "description": "CLI for the Granary programming language",
+  "license": "ISC",
+  "author": "",
+  "type": "module",
+  "main": "src/cli.mts",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "dependencies": {
+    "@commander-js/extra-typings": "^14.0.0",
+    "commander": "^14.0.3"
+  }
+}

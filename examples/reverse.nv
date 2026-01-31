@@ -1,0 +1,5 @@
+||:forward: a b c :reverse:
+|:forward: $x :reverse: ?| :reversed: $x
+|:reverse:|
+|:reversed: $x| :reversed again: $x
+|:reversed again: $x | :forward: $x
