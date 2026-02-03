@@ -10,7 +10,189 @@
 
   <body>
     <h1>Granary Kitchen Sink</h1>
+    <style>
+      body[grabbing="true"] {
+        cursor: grabbing !important;
+      }
+      [tac] {
+        display: block;
+        width: max-content;
+        height: max-content;
+      }
+      [draggable-item] {
+        cursor: grab;
+        &.ghost {
+          pointer-events: none;
+          opacity: 0.5;
+          position: fixed;
+          will-change: left, top;
+          cursor: grabbing;
+        }
+      }
 
-    <p>Test second page</p>
+      [game-element] {
+        padding: 1rem;
+        &[draggable] {
+          border: 1px solid black;
+        }
+        &[droppable-item] {
+          border: 1px dashed black;
+
+          &.can-accept {
+            border: 1px dashed green;
+          }
+        }
+      }
+    </style>
+
+    <plate- tac game-element draggable-item>
+      <style>
+        @scope {
+          padding: 1rem;
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+          img {
+            max-width: 120px;
+          }
+        }
+      </style>
+      <div>clean plate</div>
+      <img draggable="false" src="cleanplate.jpg" />
+    </plate->
+
+    <plate- tac game-element draggable-item>
+      <style>
+        @scope {
+          padding: 1rem;
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+          img {
+            max-width: 120px;
+          }
+        }
+      </style>
+      <div>dirty plate</div>
+      <img draggable="false" src="dirtyplate.jpg" />
+    </plate->
+
+    <kitchen-sink tac game-element droppable-item>
+      <style>
+        @scope {
+          padding: 1rem;
+        }
+      </style>
+      <span>kitchen sink basin</span>
+      <div drop-target></div>
+    </kitchen-sink>
+
+    <script type="module">
+      import { initialize } from "../../src/granary-web.ts";
+      let granary = initialize();
+
+      function htmlToDom(source) {
+        const tmp = document.createDocumentFragment();
+        tmp.innerHtml = source;
+        return tmp.children[0];
+      }
+
+      {
+        let dragged;
+        let ghost;
+        // Note this is NOT the Drag-n-Drop API
+        $("[draggable-item]").forEach((el) => {
+          el.addEventListener("mousedown", (evt) => {
+            dragged = el;
+            ghost = el.cloneNode(true);
+            ghost.classList.add("ghost");
+            const { width, height } = el.getBoundingClientRect();
+            ghost.style.left = `${evt.clientX - width / 2}px`;
+            ghost.style.top = `${evt.clientY - height / 3}px`;
+            document.body.append(ghost);
+            document.body.setAttribute("grabbing", true);
+          });
+        });
+        document.body.addEventListener("mousemove", (evt) => {
+          if (!ghost) return;
+          const { width, height } = ghost.getBoundingClientRect();
+          ghost.style.left = `${evt.clientX - width / 2}px`;
+          ghost.style.top = `${evt.clientY - height / 3}px`;
+        });
+        $("[droppable-item]").forEach((el) => {
+          el.addEventListener("mouseenter", (evt) => {
+            if (!dragged) return;
+            el.classList.add("can-accept");
+          });
+          el.addEventListener("mouseleave", (evt) => {
+            el.classList.remove("can-accept");
+          });
+          el.addEventListener("mouseup", (evt) => {
+            if (!dragged) return;
+            evt.preventDefault();
+            console.log("Dropped", { target: el, source: dragged });
+            el.querySelector("[drop-target]").appendChild(dragged);
+            document.body.removeAttribute("grabbing");
+            ghost.remove();
+            ghost = null;
+            dragged = null;
+          });
+        });
+      }
+    </script>
+
+    <details>
+      <summary>Attributions</summary>
+      <p class="attribution">
+        "<a
+          rel="noopener noreferrer"
+          href="https://www.flickr.com/photos/28510393@N07/2682020239"
+          >CARIBE CHINA red floral patterned dinner plate - Vintage RESTAURANT
+          WARE china</a
+        >" by
+        <a
+          rel="noopener noreferrer"
+          href="https://www.flickr.com/photos/28510393@N07"
+          >EraPhernalia Vintage . . . [&#039;&#039;playin&#039;
+          hook-y&#039;&#039;] ;o</a
+        >
+        is licensed under
+        <a
+          rel="noopener noreferrer"
+          href="https://creativecommons.org/licenses/by-sa/2.0/?ref=openverse"
+          >CC BY-SA 2.0
+          <img
+            src="https://mirrors.creativecommons.org/presskit/icons/cc.svg"
+            style="height: 1em; margin-right: 0.125em; display: inline" /><img
+            src="https://mirrors.creativecommons.org/presskit/icons/by.svg"
+            style="height: 1em; margin-right: 0.125em; display: inline" /><img
+            src="https://mirrors.creativecommons.org/presskit/icons/sa.svg"
+            style="height: 1em; margin-right: 0.125em; display: inline" /></a
+        >.
+      </p>
+      <p class="attribution">
+        "<a
+          rel="noopener noreferrer"
+          href="https://www.flickr.com/photos/21051491@N02/7552400180"
+          >Dirty Plate Flash</a
+        >" by
+        <a
+          rel="noopener noreferrer"
+          href="https://www.flickr.com/photos/21051491@N02"
+          >qubodup</a
+        >
+        is marked with
+        <a
+          rel="noopener noreferrer"
+          href="https://creativecommons.org/publicdomain/zero/1.0/?ref=openverse"
+          >CC0 1.0
+          <img
+            src="https://mirrors.creativecommons.org/presskit/icons/cc.svg"
+            style="height: 1em; margin-right: 0.125em; display: inline" /><img
+            src="https://mirrors.creativecommons.org/presskit/icons/zero.svg"
+            style="height: 1em; margin-right: 0.125em; display: inline" /></a
+        >.
+      </p>
+    </details>
   </body>
 </html>

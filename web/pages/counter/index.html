@@ -116,8 +116,6 @@
       } from "../../src/granary-web.ts";
       let granary = initialize();
       const onSettled = (ctx) => {
-        console.log("Stacks:");
-        console.log(prettyStacks(ctx.stacks));
         $1("[stacks]").innerText = prettyStacks(ctx.stacks);
       };
       granary.host.onSettled(onSettled, { signal: granary.signal });

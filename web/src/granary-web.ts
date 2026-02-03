@@ -6,6 +6,7 @@ import {
   parseRule,
   maybePopMatchingCause,
   sym,
+  prettyStacks,
 } from "granary";
 
 export * from "granary";
@@ -55,6 +56,9 @@ export const initialize = () => {
         const pretty = prettyTuple(value);
         el.innerHTML = pretty;
       });
+
+      console.log("Stacks:");
+      console.log(prettyStacks(ctx.stacks));
     },
     { signal },
   );
