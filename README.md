@@ -135,7 +135,7 @@ Run the webpage development server. It will show a URL.
 
 ```sh
 cd web;
-npm run dev
+npx vite --port 3333
 ```
 
 ### web-build
@@ -144,5 +144,40 @@ Build the webpage for deployment on a server.
 
 ```sh
 cd web;
-npm run build
+tsc && npx vite build
+```
+
+### web-test
+
+Run the Playwright test suite
+
+```
+cd web
+npx playwright test
+```
+
+### web-test-existing-server
+
+Run the test suite but assume the server from the `web-build` task above is running.
+
+```
+cd web
+npx playwright test --config playwright.config.existing-server.ts
+```
+
+### web-test-ui
+
+Run the Playwright test suite in UI mode
+
+```
+npx playwright test --ui
+```
+
+### web-test-existing-server-ui
+
+Same as above but with the UI
+
+```
+cd web
+npx playwright test --config playwright.config.existing-server.ts --ui
 ```
