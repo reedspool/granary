@@ -129,6 +129,17 @@ npm uninstall granary
 npm install ../
 ```
 
+### npm-link-build-to-web
+
+This works, but you MUST run it manually after every build. Would be nice to
+have a version which watched the build directory and did this automatically.
+
+```sh
+npm link
+cd web
+npm link granary
+```
+
 ### web-dev
 
 Run the webpage development server. It will show a URL.
